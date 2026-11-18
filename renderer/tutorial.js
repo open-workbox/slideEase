@@ -13,6 +13,7 @@ export function buildTutorial(html) {
   const lang = getLang() === 'en' ? 'en' : 'zh';
   const doc = new DOMParser().parseFromString(html, 'text/html');
   doc.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+  doc.title = lang === 'zh' ? 'SlideEase 使用教程' : 'SlideEase Tutorial';
   const drop = lang === 'zh' ? 'en' : 'zh';
   doc.querySelectorAll(`[data-${drop}]`).forEach((e) => e.remove());
   doc.querySelectorAll(`[data-${lang}]`).forEach((e) => e.removeAttribute(`data-${lang}`));

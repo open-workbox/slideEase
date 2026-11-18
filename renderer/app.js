@@ -175,7 +175,7 @@ async function openDoc(f) {
   S.historyId = f.history ? f.history.id : f.restored ? S.historyId : null;
   H.setRecords(f.history ? f.history.records : f.restored ? kept : []); // null 表示沿用当前记录
   Object.assign(S, {
-    name: f.name, baseHref: f.baseHref, tagged, notes, history: [], redo: [], version: 0, savedVersion: 0,
+    name: f.name, isTutorial: !!f.tutorial, baseHref: f.baseHref, tagged, notes, history: [], redo: [], version: 0, savedVersion: 0,
     sel: null, editing: null, doc: null, win: null, slides: [], cur: 0, warnedDyn: false, busy: true, zoom: null,
   });
   setLoading('full', t('loading'));
@@ -1272,14 +1272,16 @@ window.addEventListener('drop', async (e) => {
 
 window.api.onOpenDoc((doc) => openDoc(doc));
 // 使用教程：首次打开软件时自动打开；之后可以从设置和开始页的列表里再次进入
-async function openTutorial() {
+async function openTutorial(page) {
   const f = await window.api.readTutorial();
   if (!f) { toast(t('tutorialMissing')); return false; }
   f.content = buildTutorial(f.content);
   f.name = t('tutorialFile');
   settings.hidden = true;
   window.api.track('tutorial_open');
-  return openDoc(f);
+  const ok = await openDoc(f);
+  if (ok && page > 0 && page < S.slides.length) navigate(page); // 切换语言后回到原来那一页
+  return ok;
 }
 window.api.getPending().then((doc) => {
   if (doc) { openDoc(doc); return; } // 双击 HTML 文件启动时，直接打开那个文件
@@ -1364,6 +1366,8 @@ $('#set-lang').onchange = () => {
   updateChrome();
   H.render();
   refreshRecent();
+  // 正在看教程且没有改动：按新语言重新打开教程，停在同一页
+  if (hasDoc() && S.isTutorial && !isDirty() && !S.busy) openTutorial(S.cur);
 };
 window.api.appInfo().then((i) => {
   $('#about-version').textContent = 'v' + i.version;
