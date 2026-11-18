@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SlideEase: mask first, then feed the AI</title>
+<link rel="icon" type="image/svg+xml" href="icon.svg" />
+<link rel="apple-touch-icon" href="icon.png" />
+<meta name="description" content="Don't let AI know your company's revenue better than your boss. Let AI design your slides with masked data, then put the real numbers back in SlideEase on your own computer. Free desktop app. Nothing about your files is uploaded." />
+<style>
+  :root {
+    --ac: #5b74f5; --ac2: #8b5cf6; --ink: #0f1222; --text: #1f2430; --muted: #646b7d; --line: #e6e8ef; --soft: #f5f6fb;
+    --night: #0a0d1f; --night2: #151a3d; --pink: #ec4899; --sky: #0ea5e9; --ok: #22c55e; --warn: #f59e0b;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; color: var(--text); background: #fff; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  a { color: var(--ac); text-decoration: none; }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 0 32px; }
+  [data-en] { display: none; }
+  html[lang="en"] [data-zh] { display: none; }
+  html[lang="en"] [data-en] { display: inline; }
+
+  /* ---------- 顶栏 ---------- */
+  header { position: absolute; left: 0; right: 0; top: 0; z-index: 10; }
+  header .wrap { display: flex; align-items: center; justify-content: space-between; height: 76px; }
+  .brand { display: flex; align-items: center; gap: 12px; font-weight: 800; font-size: 21px; color: #fff; }
+  .brand img { width: 36px; height: 36px; border-radius: 10px; }
+  .nav a { margin-left: 26px; color: rgba(255, 255, 255, .72); font-size: 15px; }
+  .nav a:hover { color: #fff; }
+  .nav .lang { cursor: pointer; border: 1px solid rgba(255, 255, 255, .25); border-radius: 999px; padding: 5px 12px; }
+
+  /* ---------- 首屏 ---------- */
+  .hero { position: relative; overflow: hidden; color: #fff; background: radial-gradient(1200px 600px at 85% 10%, rgba(139, 92, 246, .35), transparent 60%), radial-gradient(900px 500px at 0% 100%, rgba(91, 116, 245, .35), transparent 60%), linear-gradient(160deg, var(--night) 0%, var(--night2) 100%); }
+  .hero::after { content: ''; position: absolute; inset: 0; background-image: linear-gradient(rgba(255, 255, 255, .04) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, .04) 1px, transparent 1px); background-size: 56px 56px; mask-image: linear-gradient(180deg, #000 0%, transparent 85%); -webkit-mask-image: linear-gradient(180deg, #000 0%, transparent 85%); pointer-events: none; }
+  .hero .wrap { position: relative; z-index: 1; display: grid; grid-template-columns: 1fr 1.08fr; gap: 64px; align-items: center; min-height: 860px; padding-top: 120px; padding-bottom: 96px; }
+  .kicker { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: #c7d0ff; background: rgba(255, 255, 255, .07); border: 1px solid rgba(255, 255, 255, .14); border-radius: 999px; padding: 7px 16px; margin-bottom: 28px; }
+  .hero h1 { font-size: 58px; line-height: 1.16; letter-spacing: -.02em; margin: 0 0 24px; font-weight: 800; }
+  html[lang="en"] .hero h1 { font-size: 48px; }
+  .hero h1 em { font-style: normal; background: linear-gradient(90deg, #a5b4ff, #f0abfc); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .tagline { font-size: 26px; font-weight: 700; margin: 0 0 14px; color: #fff; }
+  .habit { font-size: 18px; color: rgba(255, 255, 255, .78); margin: 0 0 20px; }
+  .habit b { color: #fff; background: rgba(91, 116, 245, .35); border: 1px solid rgba(165, 180, 255, .45); border-radius: 8px; padding: 2px 10px; white-space: nowrap; }
+  .hero .desc { font-size: 17px; color: rgba(255, 255, 255, .62); margin: 0 0 36px; max-width: 560px; }
+  .cta { display: flex; gap: 14px; flex-wrap: wrap; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 54px; padding: 0 30px; border-radius: 14px; font-size: 16px; font-weight: 700; border: 1px solid var(--line); background: #fff; color: var(--text); cursor: pointer; transition: transform .15s, box-shadow .15s; }
+  .btn:hover { transform: translateY(-1px); }
+  .btn.primary { background: linear-gradient(135deg, var(--ac), var(--ac2)); border: 0; color: #fff; box-shadow: 0 12px 30px rgba(91, 116, 245, .45); }
+  .btn.ghost { background: rgba(255, 255, 255, .06); border-color: rgba(255, 255, 255, .22); color: #fff; }
+  .meta { margin-top: 26px; display: flex; flex-wrap: wrap; gap: 10px 22px; font-size: 14px; color: rgba(255, 255, 255, .55); }
+  .meta > span::before { content: '✓'; color: var(--ok); margin-right: 6px; font-weight: 800; }
+
+  /* ---------- 首屏动画：脱敏数据给 AI → 在 SlideEase 里填回真数据 ---------- */
+  .stage { position: relative; aspect-ratio: 1 / .86; }
+  .chat { position: absolute; left: 0; top: 0; width: 64%; z-index: 3; background: rgba(255, 255, 255, .96); color: var(--text); border-radius: 18px; padding: 16px 18px; box-shadow: 0 24px 60px rgba(0, 0, 0, .45); animation: h-chat 12s ease-in-out infinite; }
+  .chat .who { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--muted); margin-bottom: 10px; }
+  .chat .who i { width: 22px; height: 22px; border-radius: 7px; background: linear-gradient(135deg, #10b981, #0ea5e9); display: block; }
+  .chat .msg { font-size: 14px; line-height: 1.6; background: #eef1fe; border-radius: 12px 12px 4px 12px; padding: 10px 12px; }
+  .chat .msg u { text-decoration: none; background: #fde68a; border-radius: 4px; padding: 0 3px; }
+  .chat .tag { display: inline-block; margin-top: 10px; font-size: 12px; font-weight: 700; color: #047857; background: #d1fae5; border-radius: 999px; padding: 3px 10px; }
+  .win { position: absolute; right: 0; bottom: 0; width: 90%; aspect-ratio: 16 / 10.6; background: #fff; border-radius: 18px; overflow: hidden; box-shadow: 0 30px 80px rgba(0, 0, 0, .5), 0 0 0 1px rgba(255, 255, 255, .08); animation: h-win 12s ease-in-out infinite; }
+  .win .bar { height: 9%; background: #f6f7fb; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 7px; padding: 0 16px; }
+  .win .bar i { width: 10px; height: 10px; border-radius: 50%; background: #e3e6ee; }
+  .win .bar b { margin-left: 10px; font-size: 13px; color: var(--muted); }
+  .win .bar .file { margin-left: auto; font-size: 12px; color: var(--muted); }
+  .win .page { position: absolute; left: 0; right: 0; top: 9%; bottom: 0; background: linear-gradient(160deg, #fff, #f4f6fd); color: var(--ink); }
+  .win .t { position: absolute; left: 7%; top: 9%; font-size: 15px; font-weight: 700; color: var(--muted); letter-spacing: .04em; }
+  .win .l1 { position: absolute; left: 7%; top: 24%; font-size: 22px; font-weight: 700; white-space: nowrap; }
+  .win .num { position: absolute; left: 7%; top: 36%; font-size: 58px; font-weight: 800; line-height: 1.1; white-space: nowrap; color: #3b4fe0; }
+  .win .num small { font-size: 22px; font-weight: 700; margin-left: 6px; color: var(--ink); }
+  .win .yoy { position: absolute; left: 7%; top: 58%; font-size: 15px; color: #059669; font-weight: 700; }
+  .win .l2 { position: absolute; left: 7%; top: 74%; font-size: 17px; white-space: nowrap; color: #374151; }
+  .win .bars { position: absolute; right: 7%; bottom: 14%; width: 30%; height: 50%; display: flex; align-items: flex-end; gap: 10%; }
+  .win .bars i { flex: 1; border-radius: 6px 6px 0 0; background: linear-gradient(180deg, #a5b4fc, #6366f1); height: 30%; animation: h-bar 12s ease-in-out infinite; }
+  .win .bars i:nth-child(2) { animation-name: h-bar2; }
+  .win .bars i:nth-child(3) { animation-name: h-bar3; background: linear-gradient(180deg, #f0abfc, #a855f7); }
+  /* 一个值：脱敏值 .m 先显示，之后被逐字“打”成真实值 .r */
+  .val { position: relative; display: inline-block; border-radius: 6px; outline: 2px solid transparent; outline-offset: 3px; }
+  .val .m, .val .r { display: inline-block; overflow: hidden; vertical-align: bottom; white-space: nowrap; }
+  .val .r { max-width: 0; }
+  .v1 { animation: h-o1 12s infinite; } .v1 .m { animation: h-m1 12s infinite; } .v1 .r { animation: h-r1 12s steps(6) infinite; }
+  .v2 { animation: h-o2 12s infinite; } .v2 .m { animation: h-m2 12s infinite; } .v2 .r { animation: h-r2 12s steps(6) infinite; }
+  .v3 { animation: h-o3 12s infinite; } .v3 .m { animation: h-m3 12s infinite; } .v3 .r { animation: h-r3 12s steps(6) infinite; }
+  .shield { position: absolute; right: 5%; top: 7%; z-index: 4; font-size: 13px; font-weight: 700; color: #065f46; background: #d1fae5; border: 1px solid #6ee7b7; border-radius: 999px; padding: 6px 14px; opacity: 0; animation: h-shield 12s infinite; white-space: nowrap; }
+  .cursor { position: absolute; z-index: 5; width: 26px; height: 26px; pointer-events: none; filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .35)); animation: h-cur 12s ease-in-out infinite; }
+  .cursor svg { width: 100%; height: 100%; display: block; }
+  .flow { position: absolute; z-index: 2; left: 30%; top: 25%; width: 12%; height: 12%; border-right: 3px dashed rgba(165, 180, 255, .6); border-bottom: 3px dashed rgba(165, 180, 255, .6); border-radius: 0 0 24px 0; opacity: 0; animation: h-flow 12s infinite; }
+  @keyframes h-chat { 0% { opacity: 0; transform: translateY(14px); } 5%, 30% { opacity: 1; transform: none; } 38%, 92% { opacity: .55; transform: scale(.94) translate(-3%, -3%); } 100% { opacity: 0; } }
+  @keyframes h-flow { 0%, 14% { opacity: 0; } 18%, 30% { opacity: 1; } 36%, 100% { opacity: 0; } }
+  @keyframes h-win { 0%, 18% { opacity: 0; transform: translateY(26px); } 26%, 96% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+  @keyframes h-bar { 0%, 26% { height: 20%; } 36%, 100% { height: 42%; } }
+  @keyframes h-bar2 { 0%, 26% { height: 20%; } 38%, 100% { height: 64%; } }
+  @keyframes h-bar3 { 0%, 26% { height: 20%; } 40%, 100% { height: 92%; } }
+  @keyframes h-cur { 0%, 30% { left: 70%; top: 92%; opacity: 0; } 34% { opacity: 1; left: 70%; top: 92%; } 40%, 46% { left: 14%; top: 31%; } 56%, 62% { left: 22%; top: 50%; } 72%, 78% { left: 34%; top: 80%; } 88% { left: 78%; top: 92%; opacity: 1; } 92%, 100% { left: 78%; top: 92%; opacity: 0; } }
+  @keyframes h-o1 { 0%, 41% { outline-color: transparent; } 42%, 52% { outline-color: var(--ac); } 54%, 100% { outline-color: transparent; } }
+  @keyframes h-m1 { 0%, 44% { max-width: 8em; opacity: 1; } 45%, 99% { max-width: 0; opacity: 0; } 100% { max-width: 8em; opacity: 1; } }
+  @keyframes h-r1 { 0%, 45% { max-width: 0; } 51%, 99% { max-width: 8em; } 100% { max-width: 0; } }
+  @keyframes h-o2 { 0%, 57% { outline-color: transparent; } 58%, 68% { outline-color: var(--ac); } 70%, 100% { outline-color: transparent; } }
+  @keyframes h-m2 { 0%, 60% { max-width: 8em; opacity: 1; } 61%, 99% { max-width: 0; opacity: 0; } 100% { max-width: 8em; opacity: 1; } }
+  @keyframes h-r2 { 0%, 61% { max-width: 0; } 67%, 99% { max-width: 8em; } 100% { max-width: 0; } }
+  @keyframes h-o3 { 0%, 73% { outline-color: transparent; } 74%, 84% { outline-color: var(--ac); } 86%, 100% { outline-color: transparent; } }
+  @keyframes h-m3 { 0%, 76% { max-width: 8em; opacity: 1; } 77%, 99% { max-width: 0; opacity: 0; } 100% { max-width: 8em; opacity: 1; } }
+  @keyframes h-r3 { 0%, 77% { max-width: 0; } 83%, 99% { max-width: 8em; } 100% { max-width: 0; } }
+  @keyframes h-shield { 0%, 85% { opacity: 0; transform: translateY(-6px); } 88%, 96% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+
+  /* ---------- 通用区块 ---------- */
+  section { padding: 120px 0; }
+  section.alt { background: var(--soft); }
+  .eyebrow { display: block; text-align: center; font-size: 14px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--ac); margin-bottom: 14px; }
+  h2 { font-size: 44px; line-height: 1.2; letter-spacing: -.015em; text-align: center; margin: 0 0 18px; color: var(--ink); }
+  .lead { text-align: center; color: var(--muted); font-size: 19px; max-width: 720px; margin: 0 auto 64px; }
+
+  /* 三步 */
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
+  .stepc { position: relative; background: #fff; border: 1px solid var(--line); border-radius: 22px; padding: 40px 34px 36px; box-shadow: 0 10px 30px rgba(20, 30, 70, .05); }
+  .stepc .n { font-size: 64px; font-weight: 800; line-height: 1; background: linear-gradient(135deg, var(--ac), var(--ac2)); -webkit-background-clip: text; background-clip: text; color: transparent; margin-bottom: 18px; }
+  .stepc h3 { font-size: 22px; margin: 0 0 10px; color: var(--ink); }
+  .stepc p { margin: 0; color: var(--muted); font-size: 16px; }
+
+  /* 功能展示：左文右动画，交替排列 */
+  .row { display: grid; grid-template-columns: 1fr 1.1fr; gap: 80px; align-items: center; margin-bottom: 120px; }
+  .row:last-child { margin-bottom: 0; }
+  .row.flip > :first-child { order: 2; }
+  .row h3 { font-size: 34px; line-height: 1.25; margin: 0 0 18px; color: var(--ink); letter-spacing: -.01em; }
+  .row p { font-size: 18px; color: var(--muted); margin: 0 0 14px; }
+  .row .pill { display: inline-block; font-size: 13px; font-weight: 700; color: var(--ac); background: #eef1fe; border-radius: 999px; padding: 5px 14px; margin-bottom: 18px; }
+  .demo { position: relative; aspect-ratio: 16 / 10.4; border-radius: 22px; background: #fff; overflow: hidden; box-shadow: 0 30px 70px rgba(30, 40, 90, .14), 0 0 0 1px rgba(30, 40, 90, .06); }
+  .demo .bar { position: absolute; left: 0; right: 0; top: 0; height: 9%; background: #f6f7fb; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 7px; padding: 0 16px; }
+  .demo .bar i { width: 10px; height: 10px; border-radius: 50%; background: #e3e6ee; }
+  .demo .cv { position: absolute; left: 0; right: 0; top: 9%; bottom: 0; background: #eceef4; display: grid; place-items: center; }
+  .demo .pg { position: relative; width: 86%; aspect-ratio: 16 / 9; background: #fff; border-radius: 8px; box-shadow: 0 8px 24px rgba(0, 0, 0, .08); }
+  .demo .cursor { animation: none; }
+  .ripple { position: absolute; width: 40px; height: 40px; margin: -20px 0 0 -20px; border-radius: 50%; border: 3px solid var(--ac); opacity: 0; pointer-events: none; z-index: 4; }
+  .tagb { position: absolute; font-size: 12px; font-weight: 700; color: #fff; background: #1f2430; border-radius: 6px; padding: 4px 9px; white-space: nowrap; opacity: 0; z-index: 4; }
+
+  /* 演示 A：拖动自动对齐 */
+  #dA .bx { position: absolute; border-radius: 10px; }
+  #dA .a { left: 8%; top: 12%; width: 34%; height: 30%; background: #dbe3ff; }
+  #dA .b { left: 56%; top: 56%; width: 34%; height: 32%; background: #fde2e2; outline: 2px solid transparent; outline-offset: 3px; animation: a-b 8s ease-in-out infinite; }
+  #dA .bx::after { content: ''; position: absolute; left: 10%; top: 22%; width: 60%; height: 12%; border-radius: 4px; background: rgba(31, 36, 48, .16); box-shadow: 0 22px 0 rgba(31, 36, 48, .09); }
+  #dA .gv { position: absolute; top: 4%; bottom: 4%; width: 0; border-left: 2px solid var(--pink); opacity: 0; }
+  #dA .g1 { left: 8%; animation: a-g1 8s infinite; }
+  #dA .g2 { left: 50%; border-left-style: dashed; border-left-color: var(--sky); animation: a-g2 8s infinite; }
+  #dA .tagb.p { animation: a-tp 8s ease-in-out infinite; }
+  #dA .tagb.s { animation: a-ts 8s ease-in-out infinite; }
+  #dA .cursor { animation: a-cur 8s ease-in-out infinite; }
+  @keyframes a-b { 0%, 14% { left: 56%; top: 56%; width: 34%; outline-color: transparent; } 15% { outline-color: var(--ac); } 42%, 58% { left: 8%; top: 58%; width: 34%; outline-color: var(--ac); } 80%, 92% { left: 8%; top: 58%; width: 42%; outline-color: var(--ac); } 96%, 100% { left: 56%; top: 56%; width: 34%; outline-color: transparent; } }
+  @keyframes a-cur { 0% { left: 88%; top: 96%; } 12% { left: 73%; top: 72%; } 42%, 50% { left: 25%; top: 74%; } 58% { left: 42%; top: 89%; } 80%, 92% { left: 50%; top: 89%; } 100% { left: 88%; top: 96%; } }
+  @keyframes a-g1 { 0%, 37% { opacity: 0; } 39%, 50% { opacity: 1; } 52%, 100% { opacity: 0; } }
+  @keyframes a-g2 { 0%, 75% { opacity: 0; } 77%, 88% { opacity: 1; } 90%, 100% { opacity: 0; } }
+  @keyframes a-tp { 0%, 15% { opacity: 0; left: 62%; top: 91%; } 17% { opacity: 1; left: 62%; top: 91%; } 42% { left: 15%; top: 93%; } 49% { opacity: 1; } 51%, 100% { opacity: 0; left: 15%; top: 93%; } }
+  @keyframes a-ts { 0%, 57% { opacity: 0; left: 16%; top: 93%; } 59% { opacity: 1; } 80% { left: 20%; } 90% { opacity: 1; left: 20%; } 92%, 100% { opacity: 0; left: 20%; } }
+
+  /* 演示 B：批注交回 AI */
+  #dB .l1, #dB .l2 { position: absolute; left: 8%; margin: 0; font-size: 19px; white-space: nowrap; color: #374151; }
+  #dB .l1 { top: 22%; } #dB .l2 { top: 38%; }
+  #dB .hlt { background: linear-gradient(#c7d2fe, #c7d2fe) no-repeat; background-size: 0% 100%; animation: b-hl 8s linear infinite; border-radius: 3px; }
+  #dB .bub { position: absolute; left: 52%; top: 31%; width: 30px; height: 30px; border-radius: 50%; background: var(--ac); color: #fff; display: grid; place-items: center; font-size: 14px; box-shadow: 0 4px 12px rgba(91, 116, 245, .45); opacity: 0; animation: b-bub 8s infinite; }
+  #dB .pop { position: absolute; left: 36%; top: 50%; width: 58%; background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 16px 36px rgba(20, 30, 60, .2); padding: 12px 14px; opacity: 0; animation: b-pop 8s infinite; z-index: 3; font-size: 13px; }
+  #dB .pop .q { color: var(--muted); margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #dB .pop .ta { border: 1px solid var(--ac); border-radius: 6px; padding: 6px 8px; white-space: nowrap; overflow: hidden; }
+  #dB .pop .ta span { display: inline-block; max-width: 0; overflow: hidden; vertical-align: bottom; white-space: nowrap; animation: b-type 8s steps(12) infinite; }
+  #dB .pop .bt { display: flex; justify-content: flex-end; margin-top: 8px; }
+  #dB .pop .bt b { background: var(--ac); color: #fff; font-size: 12px; padding: 3px 12px; border-radius: 6px; font-weight: 600; }
+  #dB .mk { position: absolute; left: 54%; top: 14%; width: 28px; height: 28px; border-radius: 50% 50% 50% 5px; background: var(--warn); border: 2px solid #fff; box-shadow: 0 3px 8px rgba(0, 0, 0, .25); opacity: 0; animation: b-mk 8s infinite; }
+  #dB .ai { position: absolute; right: 4%; bottom: 6%; font-size: 13px; font-weight: 700; color: #065f46; background: #d1fae5; border-radius: 999px; padding: 5px 12px; opacity: 0; animation: b-ai 8s infinite; white-space: nowrap; }
+  #dB .cursor { animation: b-cur 8s ease-in-out infinite; }
+  #dB .ripple.r1 { left: 54%; top: 34%; animation: b-r1 8s infinite; }
+  @keyframes b-cur { 0% { left: 70%; top: 90%; } 10%, 12% { left: 8%; top: 44%; } 30% { left: 49%; top: 44%; } 38%, 62% { left: 54%; top: 34%; } 72%, 100% { left: 80%; top: 92%; } }
+  @keyframes b-hl { 0%, 12% { background-size: 0% 100%; } 30%, 70% { background-size: 100% 100%; } 72%, 100% { background-size: 0% 100%; } }
+  @keyframes b-bub { 0%, 31% { opacity: 0; transform: scale(.5); } 33%, 41% { opacity: 1; transform: none; } 43%, 100% { opacity: 0; } }
+  @keyframes b-r1 { 0%, 39% { opacity: 0; transform: scale(.3); } 41% { opacity: 1; } 46%, 100% { opacity: 0; transform: scale(1.4); } }
+  @keyframes b-pop { 0%, 42% { opacity: 0; transform: translateY(8px); } 44%, 70% { opacity: 1; transform: none; } 72%, 100% { opacity: 0; } }
+  @keyframes b-type { 0%, 46% { max-width: 0; } 62%, 100% { max-width: 14em; } }
+  @keyframes b-mk { 0%, 72% { opacity: 0; transform: scale(.4); } 75%, 96% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+  @keyframes b-ai { 0%, 78% { opacity: 0; transform: translateY(6px); } 81%, 96% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+
+  /* 演示 C：一个文件 */
+  #dC .cv { background: linear-gradient(160deg, #f6f7fb, #eceffa); }
+  #dC .fileic { position: absolute; left: 50%; top: 22%; width: 18%; margin-left: -9%; aspect-ratio: 3 / 4; border-radius: 14px; background: linear-gradient(160deg, #fff, #eef1fd); border: 2px solid #c9d2f7; box-shadow: 0 16px 36px rgba(30, 40, 90, .16); }
+  #dC .fileic::after { content: 'HTML'; position: absolute; left: 14%; right: 14%; bottom: 12%; font: 800 14px/2 system-ui; text-align: center; color: #fff; background: var(--ac); border-radius: 5px; }
+  #dC .ok { position: absolute; right: -12px; top: -12px; width: 34px; height: 34px; border-radius: 50%; background: var(--ok); color: #fff; font-weight: 800; display: grid; place-items: center; opacity: 0; animation: c-ok 7s infinite; }
+  #dC .img { position: absolute; width: 9%; aspect-ratio: 1; border-radius: 9px; background: linear-gradient(135deg, #fcd34d, #f97316); box-shadow: 0 6px 14px rgba(0, 0, 0, .15); opacity: 0; }
+  #dC .i1 { animation: c-i1 7s infinite; } #dC .i2 { animation: c-i2 7s infinite; background: linear-gradient(135deg, #67e8f9, #3b82f6); } #dC .i3 { animation: c-i3 7s infinite; background: linear-gradient(135deg, #f9a8d4, #a855f7); }
+  #dC .cap { position: absolute; left: 0; right: 0; top: 78%; text-align: center; font-size: 16px; font-weight: 700; color: #374151; opacity: 0; animation: c-cap 7s infinite; }
+  @keyframes c-i1 { 0%, 6% { opacity: 0; left: 8%; top: 62%; } 8% { opacity: 1; left: 8%; top: 62%; } 30% { opacity: 1; left: 46%; top: 38%; } 33%, 100% { opacity: 0; left: 46%; top: 38%; } }
+  @keyframes c-i2 { 0%, 12% { opacity: 0; left: 84%; top: 16%; } 14% { opacity: 1; left: 84%; top: 16%; } 36% { opacity: 1; left: 47%; top: 36%; } 39%, 100% { opacity: 0; left: 47%; top: 36%; } }
+  @keyframes c-i3 { 0%, 18% { opacity: 0; left: 82%; top: 66%; } 20% { opacity: 1; left: 82%; top: 66%; } 42% { opacity: 1; left: 46%; top: 40%; } 45%, 100% { opacity: 0; left: 46%; top: 40%; } }
+  @keyframes c-ok { 0%, 46% { opacity: 0; transform: scale(.4); } 50%, 92% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+  @keyframes c-cap { 0%, 48% { opacity: 0; } 52%, 92% { opacity: 1; } 100% { opacity: 0; } }
+
+  /* 更多功能 */
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+  .card { background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 28px; }
+  .card .ico { width: 46px; height: 46px; border-radius: 13px; background: #eef1fe; display: grid; place-items: center; font-size: 22px; margin-bottom: 16px; }
+  .card h3 { margin: 0 0 8px; font-size: 18px; color: var(--ink); }
+  .card p { margin: 0; color: var(--muted); font-size: 15px; }
+
+  /* 警示横幅 */
+  .banner { background: linear-gradient(135deg, var(--night), var(--night2)); color: #fff; border-radius: 28px; padding: 64px; display: grid; grid-template-columns: 1.4fr 1fr; gap: 48px; align-items: center; position: relative; overflow: hidden; }
+  .banner::before { content: ''; position: absolute; right: -120px; top: -120px; width: 420px; height: 420px; border-radius: 50%; background: radial-gradient(circle, rgba(139, 92, 246, .45), transparent 70%); }
+  .banner h2 { text-align: left; color: #fff; font-size: 40px; margin: 0 0 16px; }
+  .banner p { color: rgba(255, 255, 255, .7); font-size: 18px; margin: 0; }
+  .banner .rules { position: relative; display: grid; gap: 14px; }
+  .banner .rules div { background: rgba(255, 255, 255, .07); border: 1px solid rgba(255, 255, 255, .12); border-radius: 14px; padding: 16px 20px; font-size: 16px; }
+  .banner .rules s { color: rgba(255, 255, 255, .55); }
+  .banner .rules b { color: #86efac; }
+  .banner .rules .no { font-style: normal; }
+
+  /* FAQ */
+  .faq { max-width: 860px; margin: 0 auto; }
+  .faq details { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 22px 26px; margin-bottom: 14px; }
+  .faq summary { cursor: pointer; font-weight: 700; font-size: 18px; color: var(--ink); list-style: none; display: flex; justify-content: space-between; align-items: center; }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary::after { content: '+'; font-size: 24px; color: var(--ac); font-weight: 400; }
+  .faq details[open] summary::after { content: '−'; }
+  .faq details p { margin: 14px 0 0; color: var(--muted); font-size: 16px; }
+
+  /* 下载 */
+  .dl-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  .dl { background: #fff; border: 1px solid var(--line); border-radius: 22px; padding: 44px 30px; text-align: center; box-shadow: 0 10px 30px rgba(20, 30, 70, .05); }
+  .dl .os { font-size: 26px; font-weight: 800; color: var(--ink); }
+  .dl .note { color: var(--muted); font-size: 15px; margin: 8px 0 26px; }
+  .dl .btn { width: 100%; }
+  .dl-sub { text-align: center; color: var(--muted); font-size: 15px; margin-top: 30px; }
+
+  /* 更新日志 */
+  .log { max-width: 860px; margin: 0 auto; background: #fff; border: 1px solid var(--line); border-radius: 22px; padding: 40px 44px; }
+  .log-ver { display: flex; align-items: baseline; gap: 14px; margin-bottom: 18px; }
+  .log-ver .ver { font-size: 26px; font-weight: 800; color: var(--ink); }
+  .log-ver .date { color: var(--muted); font-size: 14px; }
+  .log-ver .tag { margin-left: auto; background: #eef1fe; color: var(--ac); font-size: 13px; font-weight: 700; padding: 4px 12px; border-radius: 999px; }
+  .log-list { margin: 0; padding-left: 20px; }
+  .log-list li { margin: 9px 0; color: var(--muted); font-size: 15px; }
+  .log-list code { background: #f3f4f6; border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; font-size: 13px; }
+
+  footer { background: var(--night); color: rgba(255, 255, 255, .6); padding: 56px 0; font-size: 14px; }
+  footer .wrap { display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap; }
+  footer .brand { font-size: 18px; }
+  footer a { color: rgba(255, 255, 255, .8); }
+
+  @media (max-width: 1000px) {
+    .hero .wrap, .row, .banner { grid-template-columns: 1fr; }
+    .row.flip > :first-child { order: 0; }
+    .hero h1 { font-size: 44px; }
+    .steps, .grid, .dl-grid { grid-template-columns: 1fr; }
+    .nav a:not(.lang) { display: none; }
+    h2 { font-size: 34px; }
+    section { padding: 80px 0; }
+    .banner { padding: 40px 28px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="brand"><img src="icon.svg" alt="SlideEase" />SlideEase</div>
+    <nav class="nav">
+      <a href="#how"><span data-zh>怎么用</span><span data-en>How it works</span></a>
+      <a href="#features"><span data-zh>功能</span><span data-en>Features</span></a>
+      <a href="#faq"><span data-zh>常见问题</span><span data-en>FAQ</span></a>
+      <a href="#download"><span data-zh>下载</span><span data-en>Download</span></a>
+      <a href="#changelog"><span data-zh>更新日志</span><span data-en>Changelog</span></a>
+      <a href="https://github.com/open-workbox/SlideEase" target="_blank" rel="noopener">GitHub</a>
+      <a class="lang" id="lang-toggle">EN / 中</a>
+    </nav>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="wrap">
+    <div>
+      <div class="kicker">🛡 <span data-zh>AI 时代的数据保密习惯</span><span data-en>A data privacy habit for the AI era</span></div>
+      <h1><span data-zh>别让 AI 比你老板<br>还<em>清楚公司营收</em></span><span data-en>Don't let AI know your <em>revenue</em> better than your boss does</span></h1>
+      <p class="tagline"><span data-zh>效率交给 AI，饭碗留给自己。</span><span data-en>Let AI do the work. Keep your job.</span></p>
+      <p class="habit"><span data-zh>AI 时代，数据保密要养成习惯：<b>先脱敏，再喂 AI</b></span><span data-en>In the AI era, make it a habit: <b>mask first, then feed the AI</b></span></p>
+      <p class="desc"><span data-zh>先用脱敏数据让 AI 排好版、出幻灯片，再在 SlideEase 里把真实数据填回去。改字、换图、调位置，像改 PPT 一样。</span><span data-en>Let AI design the deck with masked data, then put the real numbers back in SlideEase. Edit text, pictures and layout just like in PowerPoint.</span></p>
+      <div class="cta">
+        <a class="btn primary" href="#download">⬇ <span data-zh>免费下载</span><span data-en>Download free</span></a>
+        <a class="btn ghost" href="#how"><span data-zh>看看怎么用</span><span data-en>See how it works</span></a>
+      </div>
+      <div class="meta">
+        <span><span data-zh>不会上传你的任何文件信息和内容</span><span data-en>Nothing about your files is uploaded</span></span>
+        <span><span data-zh>免费开源</span><span data-en>Free and open source</span></span>
+        <span>Windows · macOS · Linux</span>
+      </div>
+    </div>
+
+    <div class="stage" aria-hidden="true">
+      <div class="chat">
+        <div class="who"><i></i><span data-zh>AI 助手</span><span data-en>AI assistant</span></div>
+        <div class="msg"><span data-zh>帮我做一页营收汇报：<u>A 区</u>营收 <u>1,000 万</u>，同比 +12%，主要客户 <u>客户甲</u>。</span><span data-en>Make me a revenue slide: <u>Region A</u> revenue <u>$1.0M</u>, up 12%, top client <u>Client X</u>.</span></div>
+        <span class="tag"><span data-zh>✓ 已脱敏，可以放心发</span><span data-en>✓ Masked, safe to send</span></span>
+      </div>
+      <div class="flow"></div>
+      <div class="win">
+        <div class="bar"><i></i><i></i><i></i><b>SlideEase</b><span class="file"><span data-zh>营收汇报.html</span><span data-en>revenue.html</span></span></div>
+        <div class="page">
+          <div class="t">2026 Q3</div>
+          <div class="l1"><span class="val v1"><span class="m"><span data-zh>A 区</span><span data-en>Region A</span></span><span class="r"><span data-zh>华东区</span><span data-en>East China</span></span></span><span data-zh>营收</span><span data-en>&nbsp;revenue</span></div>
+          <div class="num"><span class="val v2"><span class="m"><span data-zh>1,000</span><span data-en>$1.0M</span></span><span class="r"><span data-zh>3,826</span><span data-en>$3.8M</span></span></span><small><span data-zh>万</span></small></div>
+          <div class="yoy">▲ <span data-zh>同比 +12%</span><span data-en>+12% year on year</span></div>
+          <div class="l2"><span data-zh>主要客户：</span><span data-en>Top client:&nbsp;</span><span class="val v3"><span class="m"><span data-zh>客户甲</span><span data-en>Client X</span></span><span class="r"><span data-zh>星河科技</span><span data-en>Galaxy Tech</span></span></span></div>
+          <div class="bars"><i></i><i></i><i></i></div>
+          <div class="cursor"><svg viewBox="0 0 24 24"><path d="M4 2l16 11-7 1.5 4 7-3 1.5-4-7L5 21z" fill="#1f2430" stroke="#fff" stroke-width="1.5"/></svg></div>
+        </div>
+      </div>
+      <div class="shield">🛡 <span data-zh>真实数据只在本机，没有上传</span><span data-en>Real data stays here, nothing uploaded</span></div>
+    </div>
+  </div>
+</div>
+
+<section id="how">
+  <div class="wrap">
+    <span class="eyebrow"><span data-zh>怎么用</span><span data-en>How it works</span></span>
+    <h2><span data-zh>三步做出一份带真实数据的幻灯片</span><span data-en>Three steps to slides with your real data</span></h2>
+    <p class="lead"><span data-zh>AI 负责排版，真数据只经你的手。</span><span data-en>AI does the layout. The real data only passes through your hands.</span></p>
+    <div class="steps">
+      <div class="stepc"><div class="n">01</div><h3><span data-zh>用脱敏数据让 AI 出稿</span><span data-en>Get the draft from masked data</span></h3><p><span data-zh>把金额、客户名、人名换成脱敏数据，再让 AI 做 HTML 幻灯片。</span><span data-en>Replace amounts, client names and people's names with masked data, then ask AI for an HTML slide deck.</span></p></div>
+      <div class="stepc"><div class="n">02</div><h3><span data-zh>在 SlideEase 里填回真数据</span><span data-en>Put the real data back in SlideEase</span></h3><p><span data-zh>把文件拖进来，双击就能改字，把真实数据一处处填回去，顺手调调版式。</span><span data-en>Drag the file in and double-click to type the real data back in, one place at a time. Tidy up the layout while you're there.</span></p></div>
+      <div class="stepc"><div class="n">03</div><h3><span data-zh>保存，放心发出去</span><span data-en>Save and share with confidence</span></h3><p><span data-zh>保存后还是一个 HTML 文件，图片都在里面。真实数据从头到尾没离开你的电脑。</span><span data-en>You still get one HTML file with the images inside. The real data never left your computer.</span></p></div>
+    </div>
+  </div>
+</section>
+
+<section id="features" class="alt">
+  <div class="wrap">
+    <span class="eyebrow"><span data-zh>功能</span><span data-en>Features</span></span>
+    <h2><span data-zh>填完数据，版式也能自己收拾</span><span data-en>Fill in the data, then tidy the layout yourself</span></h2>
+    <p class="lead"><span data-zh>以前麻烦在于，AI 做完还得自己翻代码填数据。现在双击就能填，剩下的小调整也都在这里做完。</span><span data-en>The hard part used to be digging through code to fill in the real data after the AI was done. Now you double-click and type, and the small fixes happen here too.</span></p>
+
+    <div class="row">
+      <div>
+        <span class="pill"><span data-zh>像 PPT 一样</span><span data-en>Just like PowerPoint</span></span>
+        <h3><span data-zh>真实数字变长了？拖一拖就摆齐</span><span data-en>Real numbers too long? Drag to line things up</span></h3>
+        <p><span data-zh>选中后拖动换位置，拖四周的小圆点改大小。靠近别的内容或页面中线时会出现参考线并自动吸附，旁边实时显示位置和尺寸。</span><span data-en>Drag to move, drag the corner dots to resize. Guide lines appear near other items and the slide center, and things snap into place while the position and size show live.</span></p>
+        <p><span data-zh>字号、颜色、透明度、圆角在右边面板里点一下就行。</span><span data-en>Font size, color, opacity and corners are one click away in the side panel.</span></p>
+      </div>
+      <div class="demo" id="dA" aria-hidden="true">
+        <div class="bar"><i></i><i></i><i></i></div>
+        <div class="cv"><div class="pg">
+          <div class="bx a"></div><div class="bx b"></div>
+          <div class="gv g1"></div><div class="gv g2"></div>
+          <div class="tagb p">X 192 · Y 626</div><div class="tagb s">806 × 346</div>
+          <div class="cursor"><svg viewBox="0 0 24 24"><path d="M4 2l16 11-7 1.5 4 7-3 1.5-4-7L5 21z" fill="#1f2430" stroke="#fff" stroke-width="1.5"/></svg></div>
+        </div></div>
+      </div>
+    </div>
+
+    <div class="row flip">
+      <div>
+        <span class="pill"><span data-zh>和 AI 配合</span><span data-en>Works with your AI</span></span>
+        <h3><span data-zh>想让 AI 再改？把批注写在页面上</span><span data-en>Want AI to change more? Leave notes on the slide</span></h3>
+        <p><span data-zh>选中文字、图片或整块内容，写下修改意见。批注会存进文件，交回 AI 时说一句“按批注改”，它就知道改哪里。</span><span data-en>Select text, a picture or a block and write what should change. Notes are saved in the file. Tell the AI "apply the notes" and it knows where to work.</span></p>
+        <p><span data-zh>发给 AI 的，记得是脱敏版本。</span><span data-en>Just remember to send the AI the masked version.</span></p>
+      </div>
+      <div class="demo" id="dB" aria-hidden="true">
+        <div class="bar"><i></i><i></i><i></i></div>
+        <div class="cv"><div class="pg">
+          <p class="l1"><span data-zh>今年用户增长了 35%，</span><span data-en>Users grew 35% this year,</span></p>
+          <p class="l2"><span class="hlt"><span data-zh>主要来自老用户推荐。</span><span data-en>mostly through referrals.</span></span></p>
+          <div class="bub">💬</div><div class="mk"></div>
+          <div class="pop">
+            <div class="q"><span data-zh>针对文字：「主要来自老用户推荐。」</span><span data-en>About: "mostly through referrals."</span></div>
+            <div class="ta"><span><span data-zh>这里配一张推荐渠道的饼图</span><span data-en>Add a pie chart of referral channels</span></span></div>
+            <div class="bt"><b><span data-zh>保存</span><span data-en>Save</span></b></div>
+          </div>
+          <div class="ai"><span data-zh>交给 AI：按批注改</span><span data-en>To AI: apply the notes</span></div>
+          <div class="ripple r1"></div>
+          <div class="cursor"><svg viewBox="0 0 24 24"><path d="M4 2l16 11-7 1.5 4 7-3 1.5-4-7L5 21z" fill="#1f2430" stroke="#fff" stroke-width="1.5"/></svg></div>
+        </div></div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <span class="pill"><span data-zh>方便分享</span><span data-en>Easy to share</span></span>
+        <h3><span data-zh>保存还是一个文件，发给谁都能打开</span><span data-en>Still one file, and anyone can open it</span></h3>
+        <p><span data-zh>保存时把图片、样式合并进同一个 HTML，换台电脑打开也不缺图。只改你动过的地方，其余代码保持原样。</span><span data-en>Pictures and styles are packed into the same HTML on save, so nothing goes missing on another computer. Only what you changed is written back; the rest of the code stays as it was.</span></p>
+        <p><span data-zh>单独几页还能导出成图片，或者存成单页 HTML。</span><span data-en>Single slides can also be exported as pictures or as their own HTML files.</span></p>
+      </div>
+      <div class="demo" id="dC" aria-hidden="true">
+        <div class="bar"><i></i><i></i><i></i></div>
+        <div class="cv">
+          <div class="fileic"><span class="ok">✓</span></div>
+          <div class="img i1"></div><div class="img i2"></div><div class="img i3"></div>
+          <div class="cap"><span data-zh>图片已合并进同一个文件</span><span data-en>Pictures packed into one file</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <span class="eyebrow"><span data-zh>还有这些</span><span data-en>And more</span></span>
+    <h2><span data-zh>改错了不怕，第一次用也不难</span><span data-en>Mistakes are easy to undo, and it's easy to learn</span></h2>
+    <p class="lead"></p>
+    <div class="grid">
+      <div class="card"><div class="ico">↩️</div><h3><span data-zh>每一步都能撤回</span><span data-en>Undo any single change</span></h3><p><span data-zh>每次改动都有记录，可以查看、定位，或者只撤回其中一处。</span><span data-en>Every change is recorded. View it, find it on the slide, or undo just that one.</span></p></div>
+      <div class="card"><div class="ico">💾</div><h3><span data-zh>每次保存留一个版本</span><span data-en>A version on every save</span></h3><p><span data-zh>改乱了也不要紧，随时退回到之前保存的样子。</span><span data-en>Messed things up? Go back to any earlier save.</span></p></div>
+      <div class="card"><div class="ico">🔍</div><h3><span data-zh>跨页查找替换</span><span data-en>Find &amp; replace across slides</span></h3><p><span data-zh>批量把脱敏词换成真实内容，批注里的文字也能搜到。</span><span data-en>Swap masked words for real ones in bulk. Notes are searchable too.</span></p></div>
+      <div class="card"><div class="ico">▶️</div><h3><span data-zh>一键全屏放映</span><span data-en>Present full screen</span></h3><p><span data-zh>按一下就开始放映，方向键翻页，Esc 回到编辑。</span><span data-en>One key to present, arrow keys to page, Esc to come back.</span></p></div>
+      <div class="card"><div class="ico">📘</div><h3><span data-zh>3 分钟动画教程</span><span data-en>A 3-minute animated tutorial</span></h3><p><span data-zh>第一次打开就有，每一步都能在教程上直接动手试。</span><span data-en>It opens on first launch, and you can try every step right on it.</span></p></div>
+      <div class="card"><div class="ico">🧩</div><h3><span data-zh>常见写法都能打开</span><span data-en>Opens the common formats</span></h3><p><span data-zh>reveal.js、一页一页切换、整页往下滚动的幻灯片，大多直接就能改。</span><span data-en>reveal.js, page-by-page and scrolling decks mostly open and edit as they are.</span></p></div>
+    </div>
+  </div>
+</section>
+
+<section class="alt">
+  <div class="wrap">
+    <div class="banner">
+      <div>
+        <h2><span data-zh>效率交给 AI，饭碗留给自己</span><span data-en>Let AI do the work. Keep your job.</span></h2>
+        <p><span data-zh>公司数据、客户信息直接发给 AI，就等于交给了第三方。别上个班，把自己也“上”进去。</span><span data-en>Sending company data or client details straight to an AI hands them to a third party. Don't let a day at work turn into a day in trouble.</span></p>
+      </div>
+      <div class="rules">
+        <div><i class="no">🚫</i> <s><span data-zh>把真实报表直接贴给 AI</span><span data-en>Paste the real report into the AI</span></s></div>
+        <div><b>✓</b> <span data-zh>先脱敏，再喂 AI</span><span data-en>Mask first, then feed the AI</span></div>
+        <div><b>✓</b> <span data-zh>真实数据，回到本机用 SlideEase 填</span><span data-en>Fill in the real data locally with SlideEase</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap">
+    <span class="eyebrow">FAQ</span>
+    <h2><span data-zh>常见问题</span><span data-en>Questions</span></h2>
+    <p class="lead"></p>
+    <div class="faq">
+      <details open>
+        <summary><span data-zh>为什么要先用脱敏数据（假数据）？</span><span data-en>Why use masked (fake) data first?</span></summary>
+        <p><span data-zh>把公司数据、客户信息直接发给 AI，等于交给了第三方。换成脱敏数据再给 AI，版式照样做得好，真实内容只在你的电脑上出现。</span><span data-en>Sending company data or client details straight to an AI hands them to a third party. With masked data the AI designs the slides just as well, and the real content only ever appears on your computer.</span></p>
+      </details>
+      <details>
+        <summary><span data-zh>脱敏数据怎么准备？</span><span data-en>How do I prepare masked data?</span></summary>
+        <p><span data-zh>照着真实数据的样子换掉就行。比如“华东区营收 3,826 万”写成“A 区营收 1,000 万”，客户名写成“客户甲”。长度和格式尽量接近，填回真实数据时版式不容易乱。</span><span data-en>Follow the shape of the real data. For example, write "Region A revenue 10 million" instead of the real figure and "Client X" instead of the real name. Keep the length and format similar so the layout holds when you put the real data back.</span></p>
+      </details>
+      <details>
+        <summary><span data-zh>我的文件会被上传吗？</span><span data-en>Is my file uploaded anywhere?</span></summary>
+        <p><span data-zh>不会。打开、编辑、保存都在你的电脑上完成，不会上传你的任何文件信息和内容。软件只会匿名统计版本号和各功能的使用次数，用来改进产品。</span><span data-en>No. Opening, editing and saving all happen on your computer, and nothing about your files is uploaded. The app only sends anonymous counts of versions and feature use to help improve it.</span></p>
+      </details>
+      <details>
+        <summary><span data-zh>会把我的原文件改坏吗？</span><span data-en>Will it break my original file?</span></summary>
+        <p><span data-zh>不点保存就不会写入任何东西。保存时只把你改过的地方写回去，其余代码保持原样。每次保存还会留一个版本，改乱了可以退回。</span><span data-en>Nothing is written until you click Save. Saving only writes back what you changed and leaves the rest of the code as it was. Every save also keeps a version you can restore.</span></p>
+      </details>
+      <details>
+        <summary><span data-zh>哪些幻灯片能打开？</span><span data-en>Which slides can it open?</span></summary>
+        <p><span data-zh>常见 AI 工具生成的 HTML 幻灯片大多可以直接打开，包括 reveal.js、一页一页切换的、整页往下滚动的。完全靠脚本临时画出来的内容，可能改不了。</span><span data-en>Most HTML slides from common AI tools open as they are, including reveal.js, page-by-page and scrolling decks. Content drawn on the fly by scripts may not be editable.</span></p>
+      </details>
+      <details>
+        <summary><span data-zh>要钱吗？</span><span data-en>Does it cost anything?</span></summary>
+        <p><span data-zh>免费，代码开源（Apache 2.0 许可）。</span><span data-en>No. It is free and open source under the Apache License 2.0.</span></p>
+      </details>
+      <details>
+        <summary><span data-zh>Mac 上提示“已损坏”或“无法打开”怎么办？</span><span data-en>macOS says the app is damaged or can't be opened</span></summary>
+        <p><span data-zh>这是因为安装包还没有苹果签名。按 <a href="install.html">安装说明</a> 执行一条命令就能打开，也可以把那页链接发给能操作电脑的 AI，让它帮你装。</span><span data-en>The package isn't signed by Apple yet. Run the one command in the <a href="install.html">install guide</a>, or give that page to an AI assistant that can use your computer and let it install the app for you.</span></p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<section id="download" class="alt">
+  <div class="wrap">
+    <span class="eyebrow"><span data-zh>下载</span><span data-en>Download</span></span>
+    <h2><span data-zh>免费下载，装好就能用</span><span data-en>Free. Install and go.</span></h2>
+    <p class="lead"></p>
+    <div class="dl-grid">
+      <div class="dl"><div class="os">Windows</div><div class="note"><span data-zh>安装版，或免安装的 zip</span><span data-en>Installer, or portable zip</span></div><a class="btn primary" href="https://github.com/open-workbox/SlideEase/releases/latest" target="_blank" rel="noopener"><span data-zh>下载 Windows 版</span><span data-en>Download for Windows</span></a></div>
+      <div class="dl"><div class="os">macOS</div><div class="note"><span data-zh>Apple 芯片 / Intel</span><span data-en>Apple Silicon / Intel</span></div><a class="btn primary" href="https://github.com/open-workbox/SlideEase/releases/latest" target="_blank" rel="noopener"><span data-zh>下载 macOS 版</span><span data-en>Download for macOS</span></a></div>
+      <div class="dl"><div class="os">Linux</div><div class="note">AppImage / deb</div><a class="btn primary" href="https://github.com/open-workbox/SlideEase/releases/latest" target="_blank" rel="noopener"><span data-zh>下载 Linux 版</span><span data-en>Download for Linux</span></a></div>
+    </div>
+    <p class="dl-sub">
+      <span data-zh>系统提示“未知来源”被拦住了？</span><span data-en>Blocked by an "unknown developer" warning? </span>
+      <a href="install.html"><span data-zh>看安装说明，或让 AI 帮你装</span><span data-en>See the install guide, or let AI install it</span></a>
+      <span data-zh> · 历史版本见 </span><span data-en> · Older versions on </span>
+      <a href="https://github.com/open-workbox/SlideEase/releases" target="_blank" rel="noopener">GitHub Releases</a>
+    </p>
+  </div>
+</section>
+
+<section id="changelog">
+  <div class="wrap">
+    <span class="eyebrow"><span data-zh>更新日志</span><span data-en>Changelog</span></span>
+    <h2><span data-zh>做了哪些事</span><span data-en>What's new</span></h2>
+    <p class="lead"></p>
+    <div class="log">
+      <div class="log-ver"><span class="ver">0.1.0</span><span class="date">2026-11-03</span><span class="tag"><span data-zh>首个版本</span><span data-en>First release</span></span></div>
+      <ul class="log-list">
+        <li><span data-zh>打开 <code>.html</code> / <code>.htm</code>：拖进窗口、点「打开」或双击文件都行；开始页列出最近打开的文件</span><span data-en>Open <code>.html</code> / <code>.htm</code> files by dragging, the Open button or double-clicking; recent files on the start page</span></li>
+        <li><span data-zh>能打开 reveal.js、一页一页切换、整页滚动等常见写法</span><span data-en>Opens reveal.js, page-by-page and scrolling decks</span></li>
+        <li><span data-zh>点选、双击改字、拖动、拖角改大小、整体缩放、方向键微调；右侧面板改字号、颜色、填充、透明度、圆角</span><span data-en>Select, double-click to edit, drag, resize, scale, nudge with arrow keys; change size, color, fill, opacity and corners in the side panel</span></li>
+        <li><span data-zh>拖动和改大小时显示参考线，自动对齐其它内容和页面中线，按住 Alt / ⌥ 可临时关闭</span><span data-en>Guide lines while dragging and resizing, snapping to other items and the slide center; hold Alt / ⌥ to turn snapping off</span></li>
+        <li><span data-zh>拖选文字后可以复制、剪切或写批注</span><span data-en>Drag over text to copy, cut or add a note</span></li>
+        <li><span data-zh>批注：可以写在文字、图片或整块内容上，有“待处理 / 处理中 / 已完成”三种状态，按页分组；存进文件里，并提醒 AI 不要删除；打开文件时会检查批注有没有被改动或弄丢</span><span data-en>Notes on text, images or blocks, with to do / in progress / done, grouped by slide; saved in the file with a reminder for AI not to delete them; checked for changes or loss when you open the file</span></li>
+        <li><span data-zh>跨页查找替换，批注内容也能搜到</span><span data-en>Find &amp; replace across slides; notes are searchable too</span></li>
+        <li><span data-zh>修改记录：每一步都能查看、定位、单独撤回；每次保存留一个可退回的版本</span><span data-en>Edit history: view, locate or undo any single change; every save keeps a version you can go back to</span></li>
+        <li><span data-zh>缩略图右键导出图片（PNG）或单页 HTML，按住 Ctrl / ⌘ 可以一次导出多页；缩略图在后台生成，打开大文件不用等</span><span data-en>Right-click thumbnails to export PNG images or single-slide HTML, several at once with Ctrl / ⌘; thumbnails are made in the background so big files open fast</span></li>
+        <li><span data-zh>全屏放映，支持翻页和缩放，按 Esc 退出</span><span data-en>Full-screen presenting with paging and zoom; Esc to exit</span></li>
+        <li><span data-zh>保存时只写回改过的地方，并把图片等资源合并进同一个文件</span><span data-en>Saving writes back only what changed and packs images and other resources into the same file</span></li>
+        <li><span data-zh>第一次打开有 3 分钟动画教程，之后可以从设置或开始页再次打开</span><span data-en>A 3-minute animated tutorial on first launch, available later from Settings or the start page</span></li>
+        <li><span data-zh>简体中文 / English；Windows、macOS（Apple 芯片 / Intel）、Linux</span><span data-en>English / Simplified Chinese; Windows, macOS (Apple Silicon / Intel) and Linux</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="brand"><img src="icon.svg" alt="SlideEase" />SlideEase</div>
+    <div><span data-zh>先脱敏，再喂 AI</span><span data-en>Mask first, then feed the AI</span> · <span data-zh>Apache 2.0 开源</span><span data-en>Apache 2.0 licensed</span> · <a href="https://github.com/open-workbox/SlideEase" target="_blank" rel="noopener">GitHub</a> · <a href="install.html"><span data-zh>安装说明</span><span data-en>Install guide</span></a></div>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    // 默认英文；URL 带 ?lang=zh 显示中文。右上角可手动切换
+    var param = new URLSearchParams(location.search).get('lang');
+    var lang = param === 'zh' ? 'zh' : 'en';
+    function apply() { document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en'; }
+    apply();
+    document.getElementById('lang-toggle').addEventListener('click', function () {
+      lang = lang === 'zh' ? 'en' : 'zh';
+      apply();
+    });
+  })();
+</script>
+</body>
+</html>

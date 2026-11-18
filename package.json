@@ -1,0 +1,99 @@
+{
+  "name": "slideease",
+  "productName": "SlideEase",
+  "version": "0.1.0",
+  "description": "Mask first, then feed the AI: put the real data back into AI-made HTML slides on your own computer / 先脱敏，再喂 AI：在本机把真实数据填回 AI 做好的 HTML 幻灯片",
+  "author": {
+    "name": "open-workbox",
+    "email": "kooxiv@live.cn"
+  },
+  "homepage": "https://7na7.com/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/open-workbox/SlideEase.git"
+  },
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder",
+    "dist:dir": "electron-builder --dir"
+  },
+  "build": {
+    "appId": "com.slideease.app",
+    "productName": "SlideEase",
+    "files": [
+      "main.js",
+      "preload.js",
+      "history.js",
+      "analytics.js",
+      "updater.js",
+      "renderer/**/*",
+      "build/icon.png",
+      "package.json"
+    ],
+    "extraFiles": [
+      "LICENSE",
+      "NOTICE"
+    ],
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "directories": {
+      "output": "dist"
+    },
+    "fileAssociations": [
+      {
+        "ext": [
+          "html",
+          "htm"
+        ],
+        "name": "HTML Document",
+        "description": "HTML Document",
+        "role": "Editor"
+      }
+    ],
+    "win": {
+      "icon": "build/icon.png",
+      "target": [
+        "nsis",
+        "zip"
+      ]
+    },
+    "nsis": {
+      "artifactName": "${productName}-Setup-${version}.${ext}",
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "mac": {
+      "icon": "build/icon.png",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["arm64", "x64"]
+        }
+      ],
+      "category": "public.app-category.productivity",
+      "identity": null
+    },
+    "linux": {
+      "icon": "build/icon.png",
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Office",
+      "maintainer": "open-workbox <kooxiv@live.cn>",
+      "synopsis": "Put the real data back into AI-made HTML slides on your own computer",
+      "mimeTypes": [
+        "text/html"
+      ]
+    }
+  },
+  "license": "Apache-2.0",
+  "type": "commonjs",
+  "devDependencies": {
+    "electron": "45.2.1",
+    "electron-builder": "26.18.0"
+  },
+  "dependencies": {
+    "posthog-node": "5.61.2"
+  }
+}

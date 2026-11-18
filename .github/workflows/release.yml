@@ -1,0 +1,88 @@
+name: Release
+
+# 推送 v 开头的 tag（如 v0.1.0）时，在三大平台各自构建并发布到同一个 GitHub Release
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch: {} # 也可在 Actions 页面手动触发（只构建，不发布）
+
+permissions:
+  contents: write # 发布 Release 需要写权限
+
+# 同一个 tag 重复推送时，取消还没跑完的旧构建
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: win
+          - os: macos-latest
+            platform: mac
+          - os: ubuntu-latest
+            platform: linux
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22 # Node 20 已于 2026-04 停止维护
+          cache: npm
+
+      # tag 和 package.json 里的版本号不一致时直接失败，避免发出版本号错误的安装包
+      - name: Check version matches tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          PKG="v$(node -p "require('./package.json').version")"
+          if [ "$PKG" != "${GITHUB_REF_NAME}" ]; then
+            echo "::error::tag ${GITHUB_REF_NAME} 与 package.json 版本 ${PKG} 不一致"
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      # electron-builder 按当前 runner 的系统出对应平台的包。
+      # 未配置签名证书，因此 Windows / macOS 产物为未签名版本。
+      - name: Build ${{ matrix.platform }}
+        run: npx electron-builder --${{ matrix.platform }} --publish never
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.platform }}
+          # 只收集给用户下载的安装包；软件自己的更新提示不依赖 latest.yml / blockmap，不需要上传
+          path: |
+            dist/*.exe
+            dist/*.zip
+            dist/*.dmg
+            dist/*.AppImage
+            dist/*.deb
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v7
+        with:
+          path: artifacts
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**/*
+          generate_release_notes: true
+          fail_on_unmatched_files: true

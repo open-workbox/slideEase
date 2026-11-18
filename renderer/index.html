@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>SlideEase</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header id="topbar">
+    <div class="brand"><span class="logo">S</span>SlideEase</div>
+    <div class="pop-wrap">
+      <button id="btn-settings" class="icon-btn" data-i18n-title="settings">⚙</button>
+      <div id="settings" class="popover" hidden>
+        <h4 data-i18n="settings"></h4>
+        <div class="set-row">
+          <label for="set-lang" data-i18n="language"></label>
+          <select id="set-lang">
+            <option value="zh">简体中文</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+        <div class="set-row set-tutorial">
+          <span data-i18n="tutorialLabel"></span>
+          <button id="set-tutorial" class="btn" data-i18n="tutorialOpen"></button>
+        </div>
+        <h4 data-i18n="shortcutsTitle"></h4>
+        <ul class="sc-list" id="set-shortcuts"></ul>
+        <h4 data-i18n="about"></h4>
+        <dl class="about">
+          <dt data-i18n="version"></dt><dd id="about-version">-</dd>
+          <dt data-i18n="runtime"></dt><dd id="about-runtime">-</dd>
+          <dt data-i18n="systemLabel"></dt><dd id="about-os">-</dd>
+        </dl>
+      </div>
+    </div>
+    <span class="sep"></span>
+    <button id="btn-open" class="btn" data-i18n="open"></button>
+    <button id="btn-save" class="btn" data-i18n="save" disabled></button>
+    <button id="btn-saveas" class="btn" data-i18n="saveAs" disabled></button>
+
+    <span class="sep"></span>
+    <button id="btn-undo" class="btn" data-i18n="undo" data-i18n-title="undoTip" disabled></button>
+    <span class="sep"></span>
+    <div id="find" class="pop-wrap">
+      <input id="find-input" type="search" data-i18n-ph="findPlaceholder" autocomplete="off" spellcheck="false" disabled />
+      <span id="find-count"></span>
+      <button id="find-prev" class="mini" data-i18n-title="findPrev" disabled>↑</button>
+      <button id="find-next" class="mini" data-i18n-title="findNext" disabled>↓</button>
+      <button id="find-toggle" class="mini txt" data-i18n="replaceToggle" disabled></button>
+      <div id="replace-pop" class="popover" hidden>
+        <input id="replace-input" type="text" data-i18n-ph="replacePlaceholder" autocomplete="off" spellcheck="false" />
+        <button id="rep-one" class="btn" data-i18n="replaceOne"></button>
+        <button id="rep-all" class="btn primary" data-i18n="replaceAll"></button>
+      </div>
+    </div>
+    <span class="spacer"></span>
+    <span id="docname"></span>
+    <button id="btn-notes" class="btn" data-i18n="notes" disabled></button>
+    <button id="btn-preview" class="btn" data-i18n="preview" data-i18n-title="previewTip" disabled></button>
+    <button id="btn-history" class="btn" data-i18n="history" disabled></button>
+  </header>
+
+  <main id="main">
+    <aside id="thumbs">
+      <div id="thumb-list"></div>
+
+    </aside>
+
+    <section id="stage-area">
+    <div id="stage">
+      <div id="empty">
+        <div class="empty-card">
+          <img class="empty-icon" src="../build/icon.png" alt="SlideEase" />
+          <h2 data-i18n="emptyTitle"></h2>
+          <p data-i18n="emptyDesc"></p>
+          <button id="btn-empty-open" class="btn primary big" data-i18n="emptyBtn"></button>
+          <div class="privacy">
+            <div class="privacy-title"><span class="shield">🛡</span><span data-i18n="privacyTitle"></span></div>
+            <p data-i18n="privacyDesc"></p>
+          </div>
+        </div>
+        <div id="recent" hidden>
+          <div class="recent-head">
+            <span data-i18n="recentTitle"></span>
+            <button id="recent-manage" class="icon-btn sm" data-i18n-title="recentManage">🗑</button>
+          </div>
+          <ul id="recent-list"></ul>
+        </div>
+        <button id="btn-tutorial" class="tut-btn" data-i18n-title="tutorialDesc"><span class="tut-ico" aria-hidden="true">📘</span><span data-i18n="tutorialTitle"></span></button>
+      </div>
+      <div id="frame-wrap" hidden>
+        <iframe id="frame" title="slides"></iframe>
+        <div id="overlay">
+          <div id="hover-box"></div>
+          <div id="sel-box" hidden>
+            <i class="edge" data-e="n"></i><i class="edge" data-e="e"></i><i class="edge" data-e="s"></i><i class="edge" data-e="w"></i>
+            <span id="sel-label"></span>
+            <i class="h" data-h="nw"></i><i class="h" data-h="n"></i><i class="h" data-h="ne"></i>
+            <i class="h" data-h="e"></i><i class="h" data-h="se"></i><i class="h" data-h="s"></i>
+            <i class="h" data-h="sw"></i><i class="h" data-h="w"></i>
+          </div>
+          <div id="note-marks"></div>
+        </div>
+      </div>
+    </div>
+    <div id="zoombar" hidden>
+      <button id="z-out" class="zb" data-i18n-title="zoomOut">−</button>
+      <button id="z-pct" class="zp" data-i18n-title="zoomFit">100%</button>
+      <button id="z-in" class="zb" data-i18n-title="zoomIn">+</button>
+      <span class="zsep"></span>
+      <button id="z-fit" class="zt" data-i18n="zoomFitBtn"></button>
+    </div>
+    </section>
+
+    <aside id="history" hidden>
+      <div class="h-head"><b data-i18n="h_title"></b><button id="h-close" class="mini">✕</button></div>
+      <div id="h-list"></div>
+      <div class="h-foot"><button id="h-clear" class="btn wide" data-i18n="h_clear"></button></div>
+    </aside>
+    <aside id="notes" hidden>
+      <div class="h-head"><b data-i18n="n_title"></b><button id="n-close" class="mini">✕</button></div>
+      <div id="n-composer">
+        <div id="n-target"></div>
+        <textarea id="n-input" rows="3" data-i18n-ph="n_placeholder"></textarea>
+        <div class="n-row">
+          <select id="n-status">
+            <option value="todo" data-i18n="n_s_todo"></option>
+            <option value="doing" data-i18n="n_s_doing"></option>
+            <option value="done" data-i18n="n_s_done"></option>
+          </select>
+          <button id="n-add" class="btn primary" data-i18n="n_add"></button>
+        </div>
+      </div>
+      <div id="n-filters"></div>
+      <div id="n-list"></div>
+      <div class="h-foot"><label class="n-marks"><input id="n-marks" type="checkbox" checked /> <span data-i18n="n_show_marks"></span></label></div>
+    </aside>
+    <aside id="panel">
+      <p id="panel-hint" data-i18n-html="panelHint"></p>
+      <div id="panel-body" hidden>
+        <div class="group" id="g-text">
+          <h3 data-i18n="text"></h3>
+          <div class="row">
+            <label data-i18n="fontSize"></label>
+            <div class="stepper">
+              <button id="fs-minus" class="mini">−</button>
+              <input id="fs-input" type="number" min="1" max="999" />
+              <button id="fs-plus" class="mini">+</button>
+            </div>
+          </div>
+          <div class="row">
+            <label data-i18n="color"></label>
+            <input id="color-input" type="color" />
+          </div>
+          <div class="row btns">
+            <button id="b-bold" class="tog" data-i18n-title="bold"><b>B</b></button>
+            <button id="b-italic" class="tog" data-i18n-title="italic"><i>I</i></button>
+            <button id="b-underline" class="tog" data-i18n-title="underline"><u>U</u></button>
+            <span class="sep"></span>
+            <button id="a-left" class="tog" data-i18n-title="alignLeft">≡</button>
+            <button id="a-center" class="tog" data-i18n-title="alignCenter">☰</button>
+            <button id="a-right" class="tog" data-i18n-title="alignRight">≣</button>
+          </div>
+        </div>
+
+        <div class="group" id="g-scale">
+          <h3 data-i18n="scaleTitle"></h3>
+          <div class="row">
+            <label data-i18n="scale" data-i18n-title="scaleTip"></label>
+            <div class="stepper">
+              <button id="sc-minus" class="mini">−</button>
+              <input id="sc-input" type="number" min="10" max="500" step="5" />
+              <span class="unit">%</span>
+              <button id="sc-plus" class="mini">+</button>
+            </div>
+          </div>
+          <div class="row">
+            <input id="sc-range" class="wide-range" type="range" min="10" max="300" step="1" />
+            <button id="sc-reset" class="mini txt" data-i18n-title="scaleReset">100%</button>
+          </div>
+        </div>
+
+        <div class="group">
+          <h3 data-i18n="appearance"></h3>
+          <div class="row">
+            <label data-i18n="fill"></label>
+            <span class="inline">
+              <input id="fill-input" type="color" />
+              <button id="fill-none" class="mini txt" data-i18n="noFill"></button>
+            </span>
+          </div>
+          <div class="row">
+            <label data-i18n="opacity"></label>
+            <input id="opacity-input" type="range" min="0" max="100" />
+          </div>
+          <div class="row">
+            <label data-i18n="radius"></label>
+            <input id="radius-input" type="range" min="0" max="120" />
+          </div>
+        </div>
+
+        <div class="group" id="g-image">
+          <h3 data-i18n="image"></h3>
+          <button id="btn-replace-img" class="btn wide" data-i18n="replaceImage"></button>
+        </div>
+
+        <div class="group">
+          <h3 data-i18n="arrange"></h3>
+          <div class="grid2">
+            <button id="btn-parent" class="btn" data-i18n="selectParent"></button>
+            <button id="btn-dup" class="btn" data-i18n="duplicate"></button>
+            <button id="btn-note" class="btn" data-i18n="n_add_note"></button>
+            <button id="btn-del" class="btn danger" data-i18n="delete"></button>
+          </div>
+        </div>
+      </div>
+      <details id="shortcuts" class="shortcuts" open>
+        <summary data-i18n="shortcutsTitle"></summary>
+        <ul class="sc-list"></ul>
+      </details>
+    </aside>
+  </main>
+
+  <footer id="status"><span id="status-left"></span><span id="status-right"></span></footer>
+  <div id="toast" hidden></div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
+
+
+
+
+
+
+

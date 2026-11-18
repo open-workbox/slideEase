@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SlideEase 使用教程</title>
+<!--
+  SlideEase 内置使用教程。
+  文字用 <span data-zh> / <span data-en> 写两种语言，打开时软件只保留当前界面语言；
+  快捷键写成 <kbd data-sc="id"></kbd>，打开时由软件按 renderer/shortcuts.js 的配置填入，不要在这里写死按键。
+-->
+<style>
+:root { --ac: #4f6bed; --ac2: #7c3aed; --ink: #1f2430; --mut: #667085; --line: #e3e6ee; --soft: #eef1fd; --pink: #ec4899; --sky: #0ea5e9; --ok: #16a34a; --warn: #f59e0b; }
+html { font-size: calc(100vw / 120); } /* 1920 宽时 1rem = 16px，其它尺寸等比缩放 */
+* { box-sizing: border-box; }
+body { margin: 0; font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif; color: var(--ink); background: #f5f6fa; }
+.slide { display: none; position: relative; width: 100vw; height: 100vh; overflow: hidden; background: linear-gradient(160deg, #ffffff 0%, #f3f5fc 100%); }
+.slide.active { display: block; }
+.wrap { position: absolute; inset: 0; display: grid; grid-template-columns: 38fr 62fr; gap: 4rem; align-items: center; padding: 5rem 6rem; }
+.wrap.center { grid-template-columns: 1fr; justify-items: center; text-align: center; }
+.step { display: inline-block; font-size: 1.1rem; font-weight: 700; color: var(--ac); background: var(--soft); border-radius: 99rem; padding: .35rem 1rem; margin-bottom: 1.6rem; letter-spacing: .05em; }
+h1 { font-size: 4.2rem; line-height: 1.2; margin: 0 0 1.6rem; letter-spacing: -.01em; }
+h2 { font-size: 3rem; line-height: 1.25; margin: 0 0 1.6rem; }
+p, li { font-size: 1.55rem; line-height: 1.75; color: #3a4152; }
+p { margin: 0 0 1.1rem; }
+ul.tips { list-style: none; padding: 0; margin: 1.6rem 0 0; }
+ul.tips li { position: relative; padding-left: 2.2rem; margin-bottom: .9rem; }
+ul.tips li::before { content: ''; position: absolute; left: .3rem; top: .75rem; width: .8rem; height: .8rem; border-radius: 50%; background: var(--ac); opacity: .8; }
+kbd { display: inline-block; min-width: 2.2rem; padding: .1rem .7rem; margin: 0 .15rem; border: 1px solid #cfd5e3; border-bottom-width: 3px; border-radius: .5rem; background: #fff; font: 600 1.25rem/1.6 ui-monospace, "SF Mono", Consolas, monospace; color: var(--ink); text-align: center; vertical-align: .1rem; }
+.hl { color: var(--ac); font-weight: 700; }
+.note { font-size: 1.25rem; color: var(--mut); margin-top: 2rem; }
+.pill { display: inline-block; padding: .3rem .9rem; border-radius: .6rem; background: #fff; border: 1px solid var(--line); font-size: 1.2rem; margin: .3rem .3rem 0 0; color: #3a4152; }
+
+/* ---------- 演示区：一个简化的软件窗口 ---------- */
+.demo { position: relative; width: 100%; aspect-ratio: 16 / 10; border-radius: 1.4rem; background: #fff; box-shadow: 0 2rem 5rem rgba(30, 40, 90, .16), 0 0 0 1px rgba(30, 40, 90, .06); overflow: hidden; }
+.bar { position: absolute; left: 0; right: 0; top: 0; height: 7%; background: #f7f8fb; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: .7rem; padding: 0 1.6%; }
+.bar i { width: .9rem; height: .9rem; border-radius: 50%; background: #e5e7ee; display: block; }
+.bar b { margin-left: 1rem; font-size: 1rem; font-weight: 600; color: var(--mut); }
+.thumbs { position: absolute; left: 0; top: 7%; bottom: 0; width: 15%; background: #fafbfd; border-right: 1px solid var(--line); padding: 1.2%; }
+.thumbs u { display: block; text-decoration: none; height: 17%; margin-bottom: 9%; border-radius: .5rem; background: #e9ecf6; border: 2px solid transparent; position: relative; }
+.thumbs u:first-child { border-color: var(--ac); }
+.panel { position: absolute; right: 0; top: 7%; bottom: 0; width: 22%; background: #fafbfd; border-left: 1px solid var(--line); padding: 2% 1.6%; }
+.panel .t { font-size: .95rem; font-weight: 700; color: var(--mut); margin: 0 0 .8rem; }
+.panel .r { display: flex; align-items: center; justify-content: space-between; font-size: .95rem; color: #3a4152; margin-bottom: 1rem; }
+.canvas { position: absolute; left: 15%; right: 22%; top: 7%; bottom: 0; background: #e8eaf0; display: grid; place-items: center; }
+.page { position: relative; width: 88%; aspect-ratio: 16 / 9; background: #fff; box-shadow: 0 .4rem 1.4rem rgba(0, 0, 0, .1); border-radius: .3rem; }
+.demo.wide .canvas { right: 0; }
+.cursor { position: absolute; width: 2.2rem; height: 2.2rem; z-index: 20; pointer-events: none; filter: drop-shadow(0 .2rem .3rem rgba(0, 0, 0, .3)); }
+.cursor svg { width: 100%; height: 100%; display: block; }
+.ripple { position: absolute; width: 3rem; height: 3rem; margin: -1.5rem 0 0 -1.5rem; border-radius: 50%; border: 3px solid var(--ac); opacity: 0; z-index: 19; pointer-events: none; }
+.frame { position: absolute; border: 2px solid var(--ac); border-radius: .2rem; opacity: 0; pointer-events: none; }
+.frame::before, .frame::after { content: ''; position: absolute; width: .9rem; height: .9rem; background: #fff; border: 2px solid var(--ac); border-radius: 50%; }
+.frame::before { left: -.55rem; top: -.55rem; }
+.frame::after { right: -.55rem; bottom: -.55rem; }
+.tag { position: absolute; font-size: .95rem; font-weight: 600; color: #fff; background: #1f2430; border-radius: .4rem; padding: .25rem .6rem; white-space: nowrap; opacity: 0; pointer-events: none; }
+.key { position: absolute; z-index: 21; opacity: 0; pointer-events: none; }
+.key kbd { font-size: 1.6rem; box-shadow: 0 .6rem 1.4rem rgba(0, 0, 0, .15); }
+</style>
+</head>
+<body>
+
+<!-- ===================== 1 欢迎 ===================== -->
+<section class="slide active" id="s-welcome">
+<style>
+#s-welcome { background: radial-gradient(circle at 80% 20%, #e9e5ff 0, transparent 45%), radial-gradient(circle at 10% 90%, #dfe8ff 0, transparent 40%), #fbfbfe; }
+#s-welcome .logo { width: 7rem; height: 7rem; border-radius: 1.8rem; display: block; margin: 0 auto 2.4rem; box-shadow: 0 1.2rem 3rem rgba(79, 107, 237, .35); animation: w-float 4s ease-in-out infinite; }
+#s-welcome h1 { font-size: 5rem; }
+#s-welcome .sub { font-size: 1.9rem; color: #3a4152; max-width: 60rem; }
+#s-welcome .chips { margin: 2.6rem 0 3rem; }
+#s-welcome .chips > span { display: inline-block; font-size: 1.4rem; padding: .7rem 1.4rem; margin: .4rem; border-radius: 99rem; background: #fff; box-shadow: 0 .4rem 1.2rem rgba(30, 40, 90, .08); opacity: 0; animation: w-in .6s ease-out forwards; }
+#s-welcome .chips > span:nth-child(2) { animation-delay: .25s; }
+#s-welcome .chips > span:nth-child(3) { animation-delay: .5s; }
+#s-welcome .chips > span:nth-child(4) { animation-delay: .75s; }
+#s-welcome .how { display: inline-block; text-align: left; background: #fff; border: 1px solid var(--line); border-radius: 1.2rem; padding: 1.6rem 2.2rem; }
+#s-welcome .how p { font-size: 1.4rem; margin: .3rem 0; }
+@keyframes w-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-.8rem); } }
+@keyframes w-in { from { opacity: 0; transform: translateY(1rem); } to { opacity: 1; transform: none; } }
+</style>
+<div class="wrap center">
+  <div>
+    <img class="logo" src="../../build/icon.png" alt="SlideEase" />
+    <h1><span data-zh>欢迎使用 SlideEase</span><span data-en>Welcome to SlideEase</span></h1>
+    <p class="sub"><span data-zh>先用脱敏数据让 AI 排好版、出幻灯片，再在这里把真实数据填回去。<br>AI 时代，数据保密要养成习惯：<b>先脱敏，再喂 AI</b>。</span><span data-en>Let AI design the deck with masked data, then put the real numbers back here.<br>In the AI era, make it a habit: <b>mask first, then feed the AI</b>.</span></p>
+    <div class="chips">
+      <span><span data-zh>✏️ 改文字</span><span data-en>✏️ Edit text</span></span>
+      <span><span data-zh>🖐 拖动调整</span><span data-en>🖐 Drag &amp; resize</span></span>
+      <span><span data-zh>💬 写批注</span><span data-en>💬 Add notes</span></span>
+      <span><span data-zh>🛡 真数据不出电脑</span><span data-en>🛡 Real data stays local</span></span>
+    </div>
+    <div class="how">
+      <p><b><span data-zh>这份教程本身就是一份幻灯片</span><span data-en>This tutorial is itself a slide deck</span></b></p>
+      <p><span data-zh>· 点左边的缩略图换页，或者在没选中任何内容时按 ↑ ↓</span><span data-en>· Click a thumbnail on the left to change slides, or press ↑ ↓ when nothing is selected</span></p>
+      <p><span data-zh>· 每学一步，都可以直接在这份教程上动手试，不点保存就不会改动任何文件</span><span data-en>· Try every step right here. Nothing is changed unless you save</span></p>
+      <p><span data-zh>· 按 <kbd data-sc="preview"></kbd> 可以全屏播放，按 Esc 回来</span><span data-en>· Press <kbd data-sc="preview"></kbd> to play full screen, Esc to come back</span></p>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ===================== 2 打开文件 ===================== -->
+<section class="slide" id="s-open">
+<style>
+#s-open .file { position: absolute; z-index: 5; left: 108%; top: 30%; width: 13%; text-align: center; animation: o-file 6s ease-in-out infinite; }
+#s-open .file .ic { width: 100%; aspect-ratio: 3 / 4; border-radius: .8rem; background: linear-gradient(160deg, #fff, #eef1fd); border: 2px solid #c9d2f7; position: relative; box-shadow: 0 1rem 2rem rgba(30, 40, 90, .18); }
+#s-open .file .ic::after { content: 'HTML'; position: absolute; left: 12%; right: 12%; bottom: 14%; font: 700 1.1rem/1.8 system-ui; color: #fff; background: var(--ac); border-radius: .3rem; }
+#s-open .file small { display: block; margin-top: .6rem; font-size: 1rem; color: var(--mut); white-space: nowrap; }
+#s-open .drop { position: absolute; inset: 9% 3% 3%; border: .25rem dashed var(--ac); border-radius: 1rem; background: rgba(79, 107, 237, .06); opacity: 0; animation: o-drop 6s infinite; display: grid; place-items: center; font-size: 1.5rem; font-weight: 700; color: var(--ac); }
+#s-open .result { position: absolute; inset: 7% 0 0; opacity: 0; animation: o-res 6s infinite; }
+#s-open .result .page h3 { position: absolute; left: 8%; top: 18%; margin: 0; font-size: 2rem; }
+#s-open .result .page p { position: absolute; left: 8%; top: 38%; margin: 0; font-size: 1.1rem; color: var(--mut); }
+#s-open .result .thumbs { top: 0; }
+#s-open .result .canvas, #s-open .result .panel { top: 0; }
+@keyframes o-file { 0%, 8% { left: 108%; top: 30%; opacity: 1; transform: rotate(8deg); } 40% { left: 44%; top: 30%; transform: rotate(0); opacity: 1; } 48% { left: 44%; top: 33%; opacity: 0; transform: scale(.6); } 100% { left: 44%; top: 33%; opacity: 0; } }
+@keyframes o-drop { 0%, 18% { opacity: 0; } 25%, 45% { opacity: 1; } 50%, 100% { opacity: 0; } }
+@keyframes o-res { 0%, 48% { opacity: 0; } 58%, 92% { opacity: 1; } 100% { opacity: 0; } }
+</style>
+<div class="wrap">
+  <div>
+    <span class="step"><span data-zh>第 1 步</span><span data-en>Step 1</span></span>
+    <h2><span data-zh>把幻灯片文件拖进来</span><span data-en>Drag your slide file in</span></h2>
+    <p><span data-zh>AI 用脱敏数据做好的幻灯片，通常是一个 <b>.html</b> 文件。把它直接拖到软件窗口里，就打开了。</span><span data-en>The slides AI made from your masked data usually come as an <b>.html</b> file. Drag it into the window and it opens.</span></p>
+    <ul class="tips">
+      <li><span data-zh>也可以点左上角的「打开」，或按 <kbd data-sc="open"></kbd></span><span data-en>Or click "Open" at the top left, or press <kbd data-sc="open"></kbd></span></li>
+      <li><span data-zh>装好软件后，双击 .html 文件也能直接用 SlideEase 打开</span><span data-en>After installing, double-click any .html file to open it in SlideEase</span></li>
+      <li><span data-zh>最近打开过的文件，会列在开始页上，点一下就能继续</span><span data-en>Recent files are listed on the start page, one click to continue</span></li>
+    </ul>
+  </div>
+  <div class="demo">
+    <div class="bar"><i></i><i></i><i></i><b>SlideEase</b></div>
+    <div class="drop"><span data-zh>松开鼠标，打开文件</span><span data-en>Release to open</span></div>
+    <div class="result">
+      <div class="thumbs"><u></u><u></u><u></u><u></u></div>
+      <div class="canvas"><div class="page"><h3><span data-zh>季度工作汇报</span><span data-en>Quarterly Report</span></h3><p><span data-zh>2026 年第三季度</span><span data-en>Q3 2026</span></p></div></div>
+      <div class="panel"><div class="t"><span data-zh>属性</span><span data-en>Properties</span></div></div>
+    </div>
+    <div class="file"><div class="ic"></div><small><span data-zh>我的幻灯片.html</span><span data-en>my-slides.html</span></small></div>
+  </div>
+</div>
+</section>
+
+<!-- ===================== 3 选中 & 改字 ===================== -->
+<section class="slide" id="s-edit">
+<style>
+#s-edit .page h3 { position: absolute; left: 8%; top: 18%; margin: 0; font-size: 2.4rem; white-space: nowrap; }
+#s-edit .page h3 .old { animation: e-old 7s infinite; }
+#s-edit .page h3 .new { position: absolute; left: 0; top: 0; overflow: hidden; white-space: nowrap; width: 0; animation: e-new 7s steps(6) infinite; }
+#s-edit .page h3 .caret { position: absolute; top: .2em; width: 2px; height: 1.1em; background: var(--ink); opacity: 0; animation: e-caret 7s infinite; }
+#s-edit .page p { position: absolute; left: 8%; top: 42%; margin: 0; font-size: 1.15rem; color: var(--mut); }
+#s-edit .frame { left: 6%; top: 14%; width: 50%; height: 22%; animation: e-frame 7s infinite; }
+#s-edit .tag.a { left: 6%; top: 3%; animation: e-tagA 7s infinite; }
+#s-edit .tag.b { left: 6%; top: 3%; background: var(--ac); animation: e-tagB 7s infinite; }
+#s-edit .cursor { animation: e-cur 7s ease-in-out infinite; }
+#s-edit .ripple.r1 { left: 30%; top: 27%; animation: e-r1 7s infinite; }
+#s-edit .ripple.r2 { left: 30%; top: 27%; animation: e-r2 7s infinite; }
+#s-edit .ripple.r3 { left: 76%; top: 78%; animation: e-r3 7s infinite; }
+@keyframes e-cur { 0% { left: 80%; top: 85%; } 17%, 50% { left: 30%; top: 27%; } 80%, 100% { left: 76%; top: 78%; } }
+@keyframes e-r1 { 0%, 18% { opacity: 0; transform: scale(.3); } 20% { opacity: 1; } 26%, 100% { opacity: 0; transform: scale(1.4); } }
+@keyframes e-r2 { 0%, 40% { opacity: 0; transform: scale(.3); } 41%, 44% { opacity: 1; } 49%, 100% { opacity: 0; transform: scale(1.4); } }
+@keyframes e-r3 { 0%, 84% { opacity: 0; transform: scale(.3); } 86% { opacity: 1; } 92%, 100% { opacity: 0; transform: scale(1.4); } }
+@keyframes e-frame { 0%, 19% { opacity: 0; border-style: solid; } 20%, 41% { opacity: 1; border-style: solid; } 42%, 85% { opacity: 1; border-style: dashed; } 86%, 100% { opacity: 0; } }
+@keyframes e-tagA { 0%, 19% { opacity: 0; } 20%, 40% { opacity: 1; } 41%, 100% { opacity: 0; } }
+@keyframes e-tagB { 0%, 41% { opacity: 0; } 42%, 85% { opacity: 1; } 86%, 100% { opacity: 0; } }
+@keyframes e-old { 0%, 52% { opacity: 1; } 53%, 99% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes e-new { 0%, 53% { width: 0; } 70%, 99% { width: 6.2em; } 100% { width: 0; } }
+@keyframes e-caret { 0%, 44% { opacity: 0; left: 6.2em; } 45%, 52% { opacity: 1; left: 6.2em; } 53% { left: 0; } 70%, 85% { opacity: 1; left: 6.2em; } 86%, 100% { opacity: 0; } }
+</style>
+<div class="wrap">
+  <div>
+    <span class="step"><span data-zh>第 2 步</span><span data-en>Step 2</span></span>
+    <h2><span data-zh>点一下选中，双击改文字</span><span data-en>Click to select, double-click to edit</span></h2>
+    <p><span data-zh>想改哪里，就<b class="hl">点一下</b>它，周围会出现蓝色框，表示选中了。</span><span data-en><b class="hl">Click</b> anything to select it. A blue frame shows what is selected.</span></p>
+    <p><span data-zh>要改字，就<b class="hl">双击</b>，光标出现后直接打字。改完点一下空白处就好。</span><span data-en>To change words, <b class="hl">double-click</b> and type. Click an empty spot when you're done.</span></p>
+    <ul class="tips">
+      <li><span data-zh>不想选了：点空白处，或按 <kbd data-sc="deselect"></kbd></span><span data-en>Deselect: click an empty spot or press <kbd data-sc="deselect"></kbd></span></li>
+      <li><span data-zh>选中后按 <kbd data-sc="del"></kbd> 删除，按 <kbd data-sc="dup"></kbd> 复制一份</span><span data-en>Press <kbd data-sc="del"></kbd> to delete, <kbd data-sc="dup"></kbd> to duplicate</span></li>
+    </ul>
+    <p class="note"><span data-zh>👉 现在就试试：双击本页左边的大标题，改成你喜欢的话。</span><span data-en>👉 Try it now: double-click the big title on the left and rewrite it.</span></p>
+  </div>
+  <div class="demo">
+    <div class="bar"><i></i><i></i><i></i><b>SlideEase</b></div>
+    <div class="thumbs"><u></u><u></u><u></u></div>
+    <div class="canvas"><div class="page">
+      <h3><span class="old"><span data-zh>季度工作汇报</span><span data-en>Q3 Report</span></span><span class="new"><span data-zh>年度工作总结</span><span data-en>Year Review</span></span><span class="caret"></span></h3>
+      <p><span data-zh>2026 年第三季度 · 市场部</span><span data-en>Q3 2026 · Marketing</span></p>
+      <div class="frame"></div>
+      <div class="tag a"><span data-zh>已选中</span><span data-en>Selected</span></div>
+      <div class="tag b"><span data-zh>正在改文字</span><span data-en>Editing text</span></div>
+      <div class="ripple r1"></div><div class="ripple r2"></div><div class="ripple r3"></div>
+      <div class="cursor"><svg viewBox="0 0 24 24"><path d="M4 2l16 11-7 1.5 4 7-3 1.5-4-7L5 21z" fill="#1f2430" stroke="#fff" stroke-width="1.5"/></svg></div>
+    </div></div>
+    <div class="panel"><div class="t"><span data-zh>属性</span><span data-en>Properties</span></div><div class="r"><span data-zh>字号</span><span data-en>Size</span><span>48</span></div><div class="r"><span data-zh>颜色</span><span data-en>Color</span><span>■</span></div></div>
+  </div>
+</div>
+</section>
+
+<!-- ===================== 4 移动与调整大小 ===================== -->
+<section class="slide" id="s-move">
+<style>
+#s-move .bx { position: absolute; border-radius: .5rem; }
+#s-move .a { left: 10%; top: 14%; width: 30%; height: 26%; background: #dbe3ff; }
+#s-move .a::after, #s-move .b::after { content: ''; position: absolute; left: 10%; right: 30%; top: 22%; height: 12%; border-radius: .3rem; background: rgba(31, 36, 48, .18); box-shadow: 0 1.6em 0 rgba(31, 36, 48, .1); }
+#s-move .b { left: 55%; top: 55%; width: 30%; height: 28%; background: #fde2e2; outline: 2px solid transparent; outline-offset: 2px; animation: m-b 8s ease-in-out infinite; }
+#s-move .b i { position: absolute; right: -.7rem; bottom: -.7rem; width: 1rem; height: 1rem; border-radius: 50%; background: #fff; border: 2px solid var(--ac); opacity: 0; animation: m-h 8s infinite; }
+#s-move .gv { position: absolute; top: 6%; bottom: 6%; width: 0; border-left: 2px solid var(--pink); opacity: 0; }
+#s-move .g1 { left: 10%; animation: m-g1 8s infinite; }
+#s-move .g2 { left: 50%; border-left: 2px dashed var(--sky); animation: m-g2 8s infinite; }
+#s-move .tag.p { animation: m-tp 8s ease-in-out infinite; }
+#s-move .tag.s { animation: m-ts 8s ease-in-out infinite; }
+#s-move .cursor { animation: m-cur 8s ease-in-out infinite; }
+@keyframes m-b { 0%, 14% { left: 55%; top: 55%; width: 30%; outline-color: transparent; } 15% { outline-color: var(--ac); } 42%, 58% { left: 10%; top: 58%; width: 30%; outline-color: var(--ac); } 80%, 92% { left: 10%; top: 58%; width: 40%; outline-color: var(--ac); } 96%, 100% { left: 55%; top: 55%; width: 30%; outline-color: transparent; } }
+@keyframes m-h { 0%, 14% { opacity: 0; } 15%, 92% { opacity: 1; } 96%, 100% { opacity: 0; } }
+@keyframes m-cur { 0% { left: 85%; top: 95%; } 12% { left: 70%; top: 69%; } 42% { left: 25%; top: 72%; } 50% { left: 25%; top: 72%; } 58% { left: 40%; top: 86%; } 80% { left: 50%; top: 86%; } 92% { left: 50%; top: 86%; } 100% { left: 85%; top: 95%; } }
+@keyframes m-g1 { 0%, 37% { opacity: 0; } 39%, 50% { opacity: 1; } 52%, 100% { opacity: 0; } }
+@keyframes m-g2 { 0%, 75% { opacity: 0; } 77%, 88% { opacity: 1; } 90%, 100% { opacity: 0; } }
+@keyframes m-tp { 0%, 15% { opacity: 0; left: 62%; top: 86%; } 17% { opacity: 1; left: 62%; top: 86%; } 42% { left: 17%; top: 89%; } 49% { opacity: 1; left: 17%; top: 89%; } 51%, 100% { opacity: 0; left: 17%; top: 89%; } }
+@keyframes m-ts { 0%, 57% { opacity: 0; left: 18%; top: 89%; } 59% { opacity: 1; left: 18%; top: 89%; } 80% { left: 23%; } 90% { opacity: 1; left: 23%; } 92%, 100% { opacity: 0; left: 23%; } }
+</style>
+<div class="wrap">
+  <div>
+    <span class="step"><span data-zh>第 3 步</span><span data-en>Step 3</span></span>
+    <h2><span data-zh>拖一拖，摆整齐</span><span data-en>Drag to move, line things up</span></h2>
+    <p><span data-zh>选中后，按住它<b class="hl">拖动</b>就能换位置；拖四周的<b class="hl">小圆点</b>可以改大小。</span><span data-en>Select it and <b class="hl">drag</b> to move it. Drag the <b class="hl">little dots</b> around it to resize.</span></p>
+    <p><span data-zh>靠近其它内容或页面中线时，会出现<span style="color:var(--pink);font-weight:700">参考线</span>并自动对齐，下方的小标签告诉你位置和大小。</span><span data-en>Near other items or the slide center, <span style="color:var(--pink);font-weight:700">guide lines</span> appear and it snaps into place. A small label shows position and size.</span></p>
+    <ul class="tips">
+      <li><span data-zh>不想自动对齐：拖的时候按住 <kbd data-sc="nosnap"></kbd></span><span data-en>Don't want snapping? Hold <kbd data-sc="nosnap"></kbd> while dragging</span></li>
+      <li><span data-zh>想挪一点点：按方向键 <kbd data-sc="move"></kbd>，按住 <kbd data-sc="fast"></kbd> 一次挪 10 像素</span><span data-en>Tiny moves: arrow keys <kbd data-sc="move"></kbd>, hold <kbd data-sc="fast"></kbd> for 10 px steps</span></li>
+      <li><span data-zh>拖文字会选中文字；要移动文字块，拖它的空白处或蓝框的边</span><span data-en>Dragging over text selects it. To move a text block, drag its empty area or the frame edge</span></li>
+    </ul>
+  </div>
+  <div class="demo">
+    <div class="bar"><i></i><i></i><i></i><b>SlideEase</b></div>
+    <div class="thumbs"><u></u><u></u><u></u></div>
+    <div class="canvas"><div class="page">
+      <div class="bx a"></div>
+      <div class="bx b"><i></i></div>
+      <div class="gv g1"></div><div class="gv g2"></div>
+      <div class="tag p">X 192 · Y 626</div>
+      <div class="tag s">768 × 302</div>
+      <div class="cursor"><svg viewBox="0 0 24 24"><path d="M4 2l16 11-7 1.5 4 7-3 1.5-4-7L5 21z" fill="#1f2430" stroke="#fff" stroke-width="1.5"/></svg></div>
+    </div></div>
+    <div class="panel"><div class="t"><span data-zh>属性</span><span data-en>Properties</span></div></div>
+  </div>
+</div>
+</section>
+
+<!-- ===================== 5 右侧面板改样式 ===================== -->
+<section class="slide" id="s-style">
+<style>
+#s-style .page h3 { position: absolute; left: 8%; top: 12%; margin: 0; font-size: 2.2rem; color: var(--ink); white-space: nowrap; outline: 2px solid var(--ac); outline-offset: .3rem; animation: st-fs 7s steps(1) infinite; }
+#s-style .card { position: absolute; left: 8%; top: 46%; width: 40%; height: 36%; border-radius: .6rem; background: linear-gradient(135deg, #e0e7ff, #f5d0fe); animation: st-sc 7s ease-in-out infinite; }
+#s-style .card::after { content: ''; position: absolute; left: 10%; top: 25%; width: 60%; height: 14%; border-radius: .3rem; background: rgba(31, 36, 48, .2); box-shadow: 0 1.4em 0 rgba(31, 36, 48, .12), 0 2.8em 0 rgba(31, 36, 48, .12); }
+#s-style .panel .r { height: 2.4rem; }
+#s-style .stp { display: inline-flex; align-items: center; gap: .3rem; }
+#s-style .stp b { width: 1.6rem; height: 1.6rem; border: 1px solid var(--line); border-radius: .3rem; background: #fff; display: grid; place-items: center; font-size: 1rem; }
+#s-style .num { position: relative; width: 2.2rem; text-align: center; height: 1.4rem; }
+#s-style .num span { position: absolute; inset: 0; opacity: 0; }
+#s-style .num span:nth-child(1) { animation: st-n1 7s steps(1) infinite; }
+#s-style .num span:nth-child(2) { animation: st-n2 7s steps(1) infinite; }
+#s-style .num span:nth-child(3) { animation: st-n3 7s steps(1) infinite; }
+#s-style .num span:nth-child(4) { animation: st-n4 7s steps(1) infinite; }
+#s-style .track { position: relative; width: 100%; height: .4rem; border-radius: 1rem; background: #dfe3ee; margin: .4rem 0 1.4rem; }
+#s-style .track i { position: absolute; top: 50%; width: 1.3rem; height: 1.3rem; margin: -.65rem 0 0 -.65rem; border-radius: 50%; background: var(--ac); left: 20%; animation: st-knob 7s ease-in-out infinite; }
+#s-style .pct { float: right; font-weight: 700; color: var(--ac); }
+#s-style .pct span { display: none; }
+#s-style .cursor { animation: st-cur 7s ease-in-out infinite; }
+#s-style .ripple { left: 95%; top: 19%; animation: st-rp 7s infinite; }
+@keyframes st-cur { 0% { left: 55%; top: 85%; } 14%, 36% { left: 94.5%; top: 18%; } 46% { left: 84%; top: 36.5%; } 52% { left: 84%; top: 36.5%; } 76%, 86% { left: 93.5%; top: 36.5%; } 100% { left: 55%; top: 85%; } }
+@keyframes st-rp { 0%, 16% { opacity: 0; transform: scale(.3); } 17% { opacity: 1; } 21% { opacity: 0; transform: scale(1.3); } 24% { opacity: 1; transform: scale(.3); } 28% { opacity: 0; transform: scale(1.3); } 31% { opacity: 1; transform: scale(.3); } 35%, 100% { opacity: 0; transform: scale(1.3); } }
+@keyframes st-fs { 0% { font-size: 2.2rem; } 18% { font-size: 2.6rem; } 25% { font-size: 3rem; } 32% { font-size: 3.4rem; } 96% { font-size: 2.2rem; } }
+@keyframes st-n1 { 0% { opacity: 1; } 18% { opacity: 0; } 96% { opacity: 1; } }
+@keyframes st-n2 { 0% { opacity: 0; } 18% { opacity: 1; } 25% { opacity: 0; } }
+@keyframes st-n3 { 0% { opacity: 0; } 25% { opacity: 1; } 32% { opacity: 0; } }
+@keyframes st-n4 { 0% { opacity: 0; } 32% { opacity: 1; } 96% { opacity: 0; } }
+@keyframes st-knob { 0%, 52% { left: 20%; } 76%, 92% { left: 75%; } 100% { left: 20%; } }
+@keyframes st-sc { 0%, 52% { transform: scale(1); } 76%, 92% { transform: scale(1.3); } 100% { transform: scale(1); } }
+</style>
+<div class="wrap">
+  <div>
+    <span class="step"><span data-zh>第 4 步</span><span data-en>Step 4</span></span>
+    <h2><span data-zh>右边的面板，改样子</span><span data-en>Change the look on the right</span></h2>
+    <p><span data-zh>选中内容后，右边会出现它的设置：<b class="hl">字号、颜色、加粗、对齐、填充颜色、透明度、圆角</b>，点一点就生效。</span><span data-en>With something selected, the panel on the right shows <b class="hl">size, color, bold, alignment, fill, opacity and corners</b>. Click to apply.</span></p>
+    <p><span data-zh>「<b class="hl">整体缩放</b>」会把整块内容连同里面的文字、图片一起放大缩小，适合把一整块调大一点。</span><span data-en><b class="hl">Scale all</b> enlarges or shrinks a whole block together with its text and images.</span></p>
+    <ul class="tips">
+      <li><span data-zh>图片：选中后点「更换图片」</span><span data-en>Images: select and click "Replace image"</span></li>
+      <li><span data-zh>选不到外面那一层？点「选择上一级」</span><span data-en>Need the outer box? Click "Select parent"</span></li>
+    </ul>
+  </div>
+  <div class="demo">
+    <div class="bar"><i></i><i></i><i></i><b>SlideEase</b></div>
+    <div class="thumbs"><u></u><u></u><u></u></div>
+    <div class="canvas"><div class="page">
+      <h3><span data-zh>产品亮点</span><span data-en>Highlights</span></h3>
+      <div class="card"></div>
+    </div></div>
+    <div class="panel">
+      <div class="t"><span data-zh>文字</span><span data-en>Text</span></div>
+      <div class="r"><span data-zh>字号</span><span data-en>Size</span><span class="stp"><b>−</b><span class="num"><span>48</span><span>56</span><span>64</span><span>72</span></span><b>+</b></span></div>
+      <div class="r"><span data-zh>颜色</span><span data-en>Color</span><span style="width:1.6rem;height:1.6rem;border-radius:.3rem;background:#1f2430;display:inline-block"></span></div>
+      <div class="t" style="margin-top:1rem"><span data-zh>整体缩放</span><span data-en>Scale all</span></div>
+      <div class="track"><i></i></div>
+      <div class="t" style="margin-top:1rem"><span data-zh>外观</span><span data-en>Appearance</span></div>
+      <div class="r"><span data-zh>透明度</span><span data-en>Opacity</span><span>100%</span></div>
+      <div class="r"><span data-zh>圆角</span><span data-en>Corners</span><span>8</span></div>
+    </div>
+    <div class="ripple"></div>
+    <div class="cursor"><svg viewBox="0 0 24 24"><path d="M4 2l16 11-7 1.5 4 7-3 1.5-4-7L5 21z" fill="#1f2430" stroke="#fff" stroke-width="1.5"/></svg></div>
+  </div>
+</div>
+</section>
+
+<!-- ===================== 6 选文字：复制 / 批注 ===================== -->
+<section class="slide" id="s-note">
+<style>
+#s-note .page .l1, #s-note .page .l2 { position: absolute; left: 8%; margin: 0; font-size: 1.5rem; white-space: nowrap; color: #3a4152; }
+#s-note .page .l1 { top: 28%; }
+#s-note .page .l2 { top: 44%; }
+#s-note .hlt { background: linear-gradient(#bfd0ff, #bfd0ff) no-repeat; background-size: 0% 100%; animation: n-hl 8s linear infinite; }
+#s-note .bub { position: absolute; left: 49%; top: 37%; width: 2.2rem; height: 2.2rem; border-radius: 50%; background: var(--ac); color: #fff; display: grid; place-items: center; font-size: 1.1rem; box-shadow: 0 .3rem .8rem rgba(79, 107, 237, .4); opacity: 0; animation: n-bub 8s infinite; }
+#s-note .pop { position: absolute; left: 38%; top: 50%; width: 56%; background: #fff; border: 1px solid var(--line); border-radius: .8rem; box-shadow: 0 1rem 2.4rem rgba(20, 30, 60, .2); padding: .9rem 1rem; opacity: 0; animation: n-pop 8s infinite; z-index: 5; }
+#s-note .pop .q { font-size: .9rem; color: var(--mut); margin-bottom: .5rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#s-note .pop .ta { height: 2.6rem; border: 1px solid var(--ac); border-radius: .4rem; padding: .4rem .6rem; font-size: 1rem; white-space: nowrap; overflow: hidden; }
+#s-note .pop .ta span { display: inline-block; overflow: hidden; white-space: nowrap; vertical-align: top; width: 0; animation: n-type 8s steps(10) infinite; }
+#s-note .pop .bt { display: flex; justify-content: flex-end; gap: .5rem; margin-top: .6rem; }
+#s-note .pop .bt b { font-size: .9rem; padding: .3rem .8rem; border-radius: .4rem; border: 1px solid var(--line); font-weight: 500; }
+#s-note .pop .bt b.p { background: var(--ac); border-color: var(--ac); color: #fff; }
+#s-note .mk { position: absolute; left: 52%; top: 22%; width: 2rem; height: 2rem; border-radius: 50% 50% 50% .3rem; background: var(--warn); border: 2px solid #fff; box-shadow: 0 .2rem .6rem rgba(0, 0, 0, .25); opacity: 0; animation: n-mk 8s infinite; display: grid; place-items: center; }
+#s-note .mk::after { content: ''; width: .8rem; height: .55rem; border-radius: .15rem; background: #fff; }
+#s-note .cursor { animation: n-cur 8s ease-in-out infinite; }
+#s-note .ripple.r1 { left: 50.5%; top: 39.5%; animation: n-r1 8s infinite; }
+#s-note .ripple.r2 { left: 88%; top: 86%; animation: n-r2 8s infinite; }
+@keyframes n-cur { 0% { left: 60%; top: 85%; } 10%, 12% { left: 8%; top: 50%; } 30% { left: 46%; top: 50%; } 38%, 42% { left: 50.5%; top: 39.5%; } 62% { left: 50.5%; top: 39.5%; } 68%, 72% { left: 88%; top: 86%; } 100% { left: 60%; top: 85%; } }
+@keyframes n-hl { 0%, 12% { background-size: 0% 100%; } 30%, 70% { background-size: 100% 100%; } 72%, 100% { background-size: 0% 100%; } }
+@keyframes n-bub { 0%, 31% { opacity: 0; transform: scale(.5); } 33%, 41% { opacity: 1; transform: scale(1); } 43%, 100% { opacity: 0; } }
+@keyframes n-r1 { 0%, 39% { opacity: 0; transform: scale(.3); } 41% { opacity: 1; } 46%, 100% { opacity: 0; transform: scale(1.4); } }
+@keyframes n-r2 { 0%, 69% { opacity: 0; transform: scale(.3); } 70% { opacity: 1; } 75%, 100% { opacity: 0; transform: scale(1.4); } }
+@keyframes n-pop { 0%, 42% { opacity: 0; transform: translateY(.6rem); } 44%, 70% { opacity: 1; transform: none; } 72%, 100% { opacity: 0; } }
+@keyframes n-type { 0%, 46% { width: 0; } 60%, 100% { width: 10em; } }
+@keyframes n-mk { 0%, 72% { opacity: 0; transform: scale(.4); } 75%, 96% { opacity: 1; transform: scale(1); } 100% { opacity: 0; } }
+</style>
+<div class="wrap">
+  <div>
+    <span class="step"><span data-zh>第 5 步</span><span data-en>Step 5</span></span>
+    <h2><span data-zh>选中文字：复制，或写批注</span><span data-en>Select text: copy it or add a note</span></h2>
+    <p><span data-zh>按住鼠标<b class="hl">从文字上拖过去</b>，就选中了这段字。点旁边出现的 <b class="hl">💬</b>，写下修改意见。</span><span data-en><b class="hl">Drag across text</b> to select it. Click the <b class="hl">💬</b> that appears and write your comment.</span></p>
+    <p><span data-zh>批注会保存在文件里。把文件交给 AI 时，让它“按批注修改”，它就知道改哪里。发给 AI 的记得是脱敏版本。</span><span data-en>Notes are saved inside the file. Hand it to AI and say "apply the notes" so it knows what to change. Only send AI the masked version.</span></p>
+    <ul class="tips">
+      <li><span data-zh>选中文字后点右键：复制 / 剪切 / 批注</span><span data-en>Right-click selected text: Copy / Cut / Note</span></li>
+      <li><span data-zh>复制 <kbd data-sc="copy"></kbd> · 剪切 <kbd data-sc="cut"></kbd> · 批注 <kbd data-sc="note"></kbd></span><span data-en>Copy <kbd data-sc="copy"></kbd> · Cut <kbd data-sc="cut"></kbd> · Note <kbd data-sc="note"></kbd></span></li>
+      <li><span data-zh>图片、整块内容也能批注：选中后按 <kbd data-sc="note"></kbd></span><span data-en>Images and blocks can have notes too: select and press <kbd data-sc="note"></kbd></span></li>
+      <li><span data-zh>所有批注在顶部「批注」里，按页分组，可以标记处理状态</span><span data-en>All notes live under "Notes" at the top, grouped by slide, with a status</span></li>
+    </ul>
+  </div>
+  <div class="demo">
+    <div class="bar"><i></i><i></i><i></i><b>SlideEase</b></div>
+    <div class="thumbs"><u></u><u></u><u></u></div>
+    <div class="canvas"><div class="page">
+      <p class="l1"><span data-zh>今年用户增长了 35%，</span><span data-en>Users grew 35% this year,</span></p>
+      <p class="l2"><span class="hlt"><span data-zh>主要来自老用户推荐。</span><span data-en>mostly via referrals.</span></span></p>
+      <div class="bub">💬</div>
+      <div class="mk"></div>
+      <div class="pop">
+        <div class="q"><span data-zh>针对文字：「主要来自老用户推荐。」</span><span data-en>About: "mostly via referrals."</span></div>
+        <div class="ta"><span><span data-zh>这里补一个具体的推荐人数</span><span data-en>Add the exact referral count</span></span></div>
+        <div class="bt"><b><span data-zh>取消</span><span data-en>Cancel</span></b><b class="p"><span data-zh>保存</span><span data-en>Save</span></b></div>
+      </div>
+      <div class="ripple r1"></div><div class="ripple r2"></div>
+      <div class="cursor"><svg viewBox="0 0 24 24"><path d="M4 2l16 11-7 1.5 4 7-3 1.5-4-7L5 21z" fill="#1f2430" stroke="#fff" stroke-width="1.5"/></svg></div>
+    </div></div>
+    <div class="panel"><div class="t"><span data-zh>属性</span><span data-en>Properties</span></div></div>
+  </div>
+</div>
+</section>
+
+<!-- ===================== 7 页面：换页、排序、导出 ===================== -->
+<section class="slide" id="s-pages">
+<style>
+#s-pages .tl { position: absolute; left: 0; top: 7%; bottom: 0; width: 30%; background: #fafbfd; border-right: 1px solid var(--line); padding: 3% 3.5%; }
+#s-pages .th { position: relative; height: 19%; margin-bottom: 4.5%; border-radius: .6rem; border: 2px solid transparent; background: #fff; box-shadow: 0 0 0 1px var(--line); display: flex; align-items: flex-end; padding: .4rem .7rem; font-size: 1rem; font-weight: 700; color: var(--mut); }
+#s-pages .th::before { content: ''; position: absolute; left: 10%; right: 10%; top: 18%; height: 18%; border-radius: .3rem; background: #e5e9f6; }
+#s-pages .th.on { border-color: var(--ac); }
+#s-pages .th .ck { position: absolute; right: .5rem; top: .5rem; width: 1.6rem; height: 1.6rem; border-radius: 50%; background: var(--ac); color: #fff; font-size: .9rem; display: grid; place-items: center; opacity: 0; }
+#s-pages .th.t2 { animation: p-pk2 8s steps(1) infinite; }
+#s-pages .th.t3 { animation: p-pk3 8s steps(1) infinite; }
+#s-pages .th.t2 .ck { animation: p-ck2 8s steps(1) infinite; }
+#s-pages .th.t3 .ck { animation: p-ck3 8s steps(1) infinite; }
+#s-pages .big { position: absolute; left: 30%; right: 0; top: 7%; bottom: 0; background: #e8eaf0; display: grid; place-items: center; }
+#s-pages .big .page::before { content: ''; position: absolute; left: 8%; top: 16%; width: 46%; height: 12%; border-radius: .4rem; background: #dbe3ff; box-shadow: 0 2.4rem 0 -.6rem #eef1f8, 0 4.4rem 0 -.6rem #eef1f8; }
+#s-pages .menu { position: absolute; left: 21%; top: 64%; width: 34%; background: #fff; border-radius: .8rem; box-shadow: 0 1rem 2.6rem rgba(20, 30, 60, .25); padding: .4rem; opacity: 0; animation: p-menu 8s infinite; z-index: 6; }
+#s-pages .menu div { font-size: 1.05rem; padding: .6rem .9rem; border-radius: .5rem; white-space: nowrap; }
+#s-pages .menu div:first-child { animation: p-hov 8s steps(1) infinite; }
+#s-pages .toast { position: absolute; left: 50%; bottom: 6%; transform: translateX(-50%); background: rgba(31, 36, 48, .92); color: #fff; font-size: 1.05rem; padding: .6rem 1.2rem; border-radius: .6rem; opacity: 0; animation: p-toast 8s infinite; white-space: nowrap; }
+#s-pages .key { left: 31%; top: 30%; animation: p-key 8s infinite; }
+#s-pages .cursor { animation: p-cur 8s ease-in-out infinite; }
+@keyframes p-cur { 0% { left: 62%; top: 82%; } 14%, 18% { left: 18%; top: 41%; } 27%, 44% { left: 18%; top: 63%; } 53%, 60% { left: 30%; top: 68.5%; } 100% { left: 62%; top: 82%; } }
+@keyframes p-key { 0%, 11% { opacity: 0; transform: translateY(.5rem); } 13%, 31% { opacity: 1; transform: none; } 33%, 100% { opacity: 0; } }
+@keyframes p-pk2 { 0% { border-color: transparent; background: #fff; } 17% { border-color: #9fb0f5; background: var(--soft); } 92% { border-color: transparent; background: #fff; } }
+@keyframes p-pk3 { 0% { border-color: transparent; background: #fff; } 29% { border-color: #9fb0f5; background: var(--soft); } 92% { border-color: transparent; background: #fff; } }
+@keyframes p-ck2 { 0% { opacity: 0; } 17% { opacity: 1; } 92% { opacity: 0; } }
+@keyframes p-ck3 { 0% { opacity: 0; } 29% { opacity: 1; } 92% { opacity: 0; } }
+@keyframes p-menu { 0%, 43% { opacity: 0; transform: scale(.96); } 45%, 60% { opacity: 1; transform: none; } 62%, 100% { opacity: 0; } }
+@keyframes p-hov { 0% { background: transparent; color: inherit; } 52% { background: var(--soft); color: var(--ac); } 62% { background: transparent; color: inherit; } }
+@keyframes p-toast { 0%, 62% { opacity: 0; } 64%, 88% { opacity: 1; } 90%, 100% { opacity: 0; } }
+</style>
+<div class="wrap">
+  <div>
+    <span class="step"><span data-zh>第 6 步</span><span data-en>Step 6</span></span>
+    <h2><span data-zh>左边的缩略图，管好每一页</span><span data-en>Thumbnails: manage your slides</span></h2>
+    <p><span data-zh><b class="hl">点</b>缩略图换页；<b class="hl">上下拖动</b>缩略图可以调整页面顺序。</span><span data-en><b class="hl">Click</b> a thumbnail to go to that slide; <b class="hl">drag</b> it up or down to reorder.</span></p>
+    <p><span data-zh>在缩略图上<b class="hl">点右键</b>，可以把这一页导出成<b>图片</b>，或者单独存成一个 <b>HTML 文件</b>。</span><span data-en><b class="hl">Right-click</b> a thumbnail to export that slide as an <b>image</b> or as its own <b>HTML file</b>.</span></p>
+    <ul class="tips">
+      <li><span data-zh>一次导出好几页：按住 <kbd data-sc="multi"></kbd> 逐个点选，按住 <kbd data-sc="multi" data-sc-i="1"></kbd> 连续选择</span><span data-en>Several at once: hold <kbd data-sc="multi"></kbd> to pick slides, <kbd data-sc="multi" data-sc-i="1"></kbd> to pick a range</span></li>
+      <li><span data-zh>想在整份文档里找字：顶部的查找框，或按 <kbd data-sc="find"></kbd>，也能搜到批注</span><span data-en>Find words across all slides: the search box at the top or <kbd data-sc="find"></kbd> (notes are searched too)</span></li>
+    </ul>
+  </div>
+  <div class="demo">
+    <div class="bar"><i></i><i></i><i></i><b>SlideEase</b></div>
+    <div class="tl">
+      <div class="th on">1</div>
+      <div class="th t2">2<span class="ck">✓</span></div>
+      <div class="th t3">3<span class="ck">✓</span></div>
+      <div class="th">4</div>
+    </div>
+    <div class="big"><div class="page"></div></div>
+    <div class="menu"><div><span data-zh>导出 2 页为图片</span><span data-en>Export 2 slides as images</span></div><div><span data-zh>导出 2 页为单页 HTML</span><span data-en>Export 2 slides as HTML</span></div></div>
+    <div class="toast"><span data-zh>已导出 2 个文件</span><span data-en>Exported 2 files</span></div>
+    <div class="key"><kbd data-sc="multi"></kbd></div>
+    <div class="cursor"><svg viewBox="0 0 24 24"><path d="M4 2l16 11-7 1.5 4 7-3 1.5-4-7L5 21z" fill="#1f2430" stroke="#fff" stroke-width="1.5"/></svg></div>
+  </div>
+</div>
+</section>
+
+<!-- ===================== 8 改错了也不怕 ===================== -->
+<section class="slide" id="s-undo">
+<style>
+#s-undo .canvas { right: 32%; }
+#s-undo .page h3 { position: absolute; left: 8%; top: 18%; margin: 0; font-size: 2.4rem; white-space: nowrap; animation: u-col 7s steps(1) infinite; }
+#s-undo .page .bx { position: absolute; left: 8%; top: 48%; width: 50%; height: 32%; border-radius: .5rem; background: #e0e7ff; }
+#s-undo .hp { position: absolute; right: 0; top: 7%; bottom: 0; width: 32%; background: #fafbfd; border-left: 1px solid var(--line); padding: 3% 3%; }
+#s-undo .hp .t { font-size: 1.05rem; font-weight: 700; margin-bottom: 1rem; }
+#s-undo .it { display: flex; gap: .6rem; align-items: center; background: #fff; border: 1px solid var(--line); border-radius: .6rem; padding: .6rem .7rem; margin-bottom: .6rem; font-size: .95rem; }
+#s-undo .it i { width: 1.6rem; height: 1.6rem; border-radius: .4rem; background: var(--soft); color: var(--ac); font-style: normal; font-weight: 700; display: grid; place-items: center; font-size: .85rem; flex: none; }
+#s-undo .it small { margin-left: auto; color: var(--mut); font-size: .8rem; }
+#s-undo .it.n { opacity: 0; animation: u-new 7s infinite; }
+#s-undo .key { left: 30%; top: 42%; animation: u-key 7s infinite; }
+#s-undo .key kbd { font-size: 2rem; }
+#s-undo .cursor { animation: u-cur 7s ease-in-out infinite; }
+@keyframes u-col { 0% { color: var(--ink); } 20% { color: #ef4444; } 60% { color: var(--ink); } }
+@keyframes u-new { 0%, 19% { opacity: 0; transform: translateY(-.6rem); } 21%, 57% { opacity: 1; transform: none; } 60%, 92% { opacity: .35; transform: none; } 95%, 100% { opacity: 0; } }
+@keyframes u-key { 0%, 40% { opacity: 0; transform: scale(.8); } 44%, 52% { opacity: 1; transform: scale(1); } 56% { opacity: 1; transform: scale(.94); } 62%, 100% { opacity: 0; transform: scale(1); } }
+@keyframes u-cur { 0% { left: 45%; top: 85%; } 18%, 30% { left: 30%; top: 30%; } 100% { left: 45%; top: 85%; } }
+</style>
+<div class="wrap">
+  <div>
+    <span class="step"><span data-zh>第 7 步</span><span data-en>Step 7</span></span>
+    <h2><span data-zh>改错了？一键撤销</span><span data-en>Made a mistake? Undo it</span></h2>
+    <p><span data-zh>点顶部的「撤销」，或按 <kbd data-sc="undo"></kbd>，就回到上一步。撤销多了，按 <kbd data-sc="redo"></kbd> 再恢复。</span><span data-en>Click "Undo" at the top or press <kbd data-sc="undo"></kbd>. Went too far? <kbd data-sc="redo"></kbd> brings it back.</span></p>
+    <p><span data-zh>右上角的「修改记录」会记下你的每一次改动：改了哪里、改之前和改之后是什么样，都能点开查看、定位，或者单独还原某一条。</span><span data-en>"History" at the top right records every change: what changed, before and after. Open, locate, or revert any single entry.</span></p>
+    <p class="note"><span data-zh>每次保存都会留一个保存点，万一改乱了，可以整体退回到之前保存的样子。</span><span data-en>Each save leaves a restore point, so you can always go back to an earlier saved version.</span></p>
+  </div>
+  <div class="demo">
+    <div class="bar"><i></i><i></i><i></i><b>SlideEase</b></div>
+    <div class="thumbs"><u></u><u></u><u></u></div>
+    <div class="canvas"><div class="page"><h3><span data-zh>团队介绍</span><span data-en>Our Team</span></h3><div class="bx"></div></div></div>
+    <div class="hp">
+      <div class="t"><span data-zh>修改记录</span><span data-en>History</span></div>
+      <div class="it n"><i>A</i><span data-zh>修改文字颜色</span><span data-en>Changed text color</span><small><span data-zh>刚刚</span><span data-en>now</span></small></div>
+      <div class="it"><i>✥</i><span data-zh>调整了位置</span><span data-en>Moved</span><small>10:24</small></div>
+      <div class="it"><i>T</i><span data-zh>修改了文字</span><span data-en>Edited text</span><small>10:21</small></div>
+      <div class="it"><i>⤢</i><span data-zh>调整了大小</span><span data-en>Resized</span><small>10:18</small></div>
+    </div>
+    <div class="key"><kbd data-sc="undo"></kbd></div>
+    <div class="cursor"><svg viewBox="0 0 24 24"><path d="M4 2l16 11-7 1.5 4 7-3 1.5-4-7L5 21z" fill="#1f2430" stroke="#fff" stroke-width="1.5"/></svg></div>
+  </div>
+</div>
+</section>
+
+<!-- ===================== 9 保存与放映 ===================== -->
+<section class="slide" id="s-save">
+<style>
+#s-save .demo { background: #f4f6fb; }
+#s-save .fileic { position: absolute; left: 50%; top: 26%; width: 16%; margin-left: -8%; aspect-ratio: 3 / 4; border-radius: 1rem; background: linear-gradient(160deg, #fff, #eef1fd); border: 2px solid #c9d2f7; box-shadow: 0 1rem 2.4rem rgba(30, 40, 90, .16); animation: sv-file 8s infinite; }
+#s-save .fileic::after { content: 'HTML'; position: absolute; left: 14%; right: 14%; bottom: 12%; font: 700 1.1rem/1.9 system-ui; text-align: center; color: #fff; background: var(--ac); border-radius: .3rem; }
+#s-save .fileic .ok { position: absolute; right: -1rem; top: -1rem; width: 2.6rem; height: 2.6rem; border-radius: 50%; background: var(--ok); color: #fff; font-size: 1.4rem; font-weight: 800; display: grid; place-items: center; opacity: 0; animation: sv-ok 8s infinite; }
+#s-save .img { position: absolute; width: 7%; aspect-ratio: 1; border-radius: .5rem; background: linear-gradient(135deg, #fcd34d, #f97316); box-shadow: 0 .4rem 1rem rgba(0, 0, 0, .15); opacity: 0; }
+#s-save .img::after { content: ''; position: absolute; left: 20%; right: 20%; bottom: 22%; height: 30%; background: rgba(255, 255, 255, .7); clip-path: polygon(0 100%, 40% 20%, 65% 70%, 80% 45%, 100% 100%); }
+#s-save .i1 { animation: sv-i1 8s infinite; }
+#s-save .i2 { animation: sv-i2 8s infinite; }
+#s-save .i3 { animation: sv-i3 8s infinite; }
+#s-save .cap { position: absolute; left: 0; right: 0; top: 74%; text-align: center; font-size: 1.25rem; font-weight: 600; color: #3a4152; opacity: 0; animation: sv-cap 8s infinite; }
+#s-save .show { position: absolute; left: 50%; top: 50%; width: 30%; height: 30%; transform: translate(-50%, -50%); background: #0b0d12; border-radius: .6rem; opacity: 0; animation: sv-show 8s ease-in-out infinite; overflow: hidden; }
+#s-save .show .sl { position: absolute; inset: 14% 12%; background: linear-gradient(135deg, #312e81, #7c3aed); border-radius: .3rem; display: grid; place-items: center; color: #fff; font-size: 2.2rem; font-weight: 800; }
+#s-save .show .tip { position: absolute; left: 0; right: 0; top: 0; background: #000; color: #fff; text-align: center; font-size: 1rem; padding: .45rem; }
+#s-save .show .tip b { color: #ffd34d; }
+#s-save .key.k1 { left: 8%; top: 10%; animation: sv-k1 8s infinite; }
+#s-save .key.k2 { left: 8%; top: 10%; animation: sv-k2 8s infinite; }
+@keyframes sv-k1 { 0%, 4% { opacity: 0; } 6%, 40% { opacity: 1; } 44%, 100% { opacity: 0; } }
+@keyframes sv-k2 { 0%, 52% { opacity: 0; } 54%, 92% { opacity: 1; } 95%, 100% { opacity: 0; } }
+@keyframes sv-file { 0%, 46% { opacity: 1; } 49%, 97% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes sv-i1 { 0%, 8% { opacity: 0; left: 10%; top: 60%; } 10% { opacity: 1; left: 10%; top: 60%; } 24% { opacity: 1; left: 46%; top: 40%; } 26%, 100% { opacity: 0; left: 46%; top: 40%; } }
+@keyframes sv-i2 { 0%, 12% { opacity: 0; left: 84%; top: 18%; } 14% { opacity: 1; left: 84%; top: 18%; } 28% { opacity: 1; left: 47%; top: 38%; } 30%, 100% { opacity: 0; left: 47%; top: 38%; } }
+@keyframes sv-i3 { 0%, 16% { opacity: 0; left: 82%; top: 70%; } 18% { opacity: 1; left: 82%; top: 70%; } 32% { opacity: 1; left: 46%; top: 42%; } 34%, 100% { opacity: 0; left: 46%; top: 42%; } }
+@keyframes sv-ok { 0%, 34% { opacity: 0; transform: scale(.4); } 37%, 46% { opacity: 1; transform: scale(1); } 49%, 100% { opacity: 0; } }
+@keyframes sv-cap { 0%, 34% { opacity: 0; } 37%, 46% { opacity: 1; } 49%, 100% { opacity: 0; } }
+@keyframes sv-show { 0%, 52% { opacity: 0; width: 30%; height: 30%; border-radius: .6rem; } 56% { opacity: 1; width: 30%; height: 30%; } 66%, 92% { opacity: 1; width: 100%; height: 100%; border-radius: 0; } 96%, 100% { opacity: 0; width: 100%; height: 100%; } }
+</style>
+<div class="wrap">
+  <div>
+    <span class="step"><span data-zh>第 8 步</span><span data-en>Step 8</span></span>
+    <h2><span data-zh>保存，然后放映</span><span data-en>Save, then present</span></h2>
+    <p><span data-zh>按 <kbd data-sc="save"></kbd> 保存。文档里用到的图片会<b class="hl">合并进同一个文件</b>，发给别人、换台电脑打开，图片都不会丢。</span><span data-en>Press <kbd data-sc="save"></kbd> to save. Images are <b class="hl">packed into the same file</b>, so nothing goes missing when you share it.</span></p>
+    <p><span data-zh>想保留原文件，就用「另存为」<kbd data-sc="saveAs"></kbd>。</span><span data-en>To keep the original, use "Save As" <kbd data-sc="saveAs"></kbd>.</span></p>
+    <p><span data-zh>按 <kbd data-sc="preview"></kbd> 全屏放映，用方向键或点击翻页，按 <b>Esc</b> 回到编辑。</span><span data-en>Press <kbd data-sc="preview"></kbd> to present full screen. Use arrow keys or click to advance, <b>Esc</b> to come back.</span></p>
+    <p class="note">🛡 <span data-zh>编辑和保存都在你的电脑上，不会上传你的任何文件信息和内容。交给 AI 的是脱敏数据，真实数据只在这里填。</span><span data-en>Editing and saving happen on your computer, and nothing about your files is uploaded. AI gets the masked data; the real data is filled in only here.</span></p>
+  </div>
+  <div class="demo">
+    <div class="fileic"><span class="ok">✓</span></div>
+    <div class="img i1"></div><div class="img i2"></div><div class="img i3"></div>
+    <div class="cap"><span data-zh>图片已合并进文件</span><span data-en>Images packed into the file</span></div>
+    <div class="show"><div class="sl">SlideEase</div><div class="tip"><span data-zh>按 <b>Esc</b> 退出预览</span><span data-en>Press <b>Esc</b> to exit preview</span></div></div>
+    <div class="key k1"><kbd data-sc="save"></kbd></div>
+    <div class="key k2"><kbd data-sc="preview"></kbd></div>
+  </div>
+</div>
+</section>
+
+<!-- ===================== 10 快捷键 & 开始 ===================== -->
+<section class="slide" id="s-start">
+<style>
+#s-start .wrap { grid-template-columns: 1.5fr 1fr; align-items: start; padding-top: 5rem; }
+#s-start ul.sc { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: 1fr 1fr; column-gap: 2.4rem; }
+#s-start ul.sc li { display: flex; align-items: center; gap: 1rem; font-size: 1.15rem; line-height: 1.45; padding: .5rem 0; border-bottom: 1px dashed var(--line); }
+#s-start ul.sc .k { flex: none; min-width: 9.5rem; }
+#s-start ul.sc kbd { font-size: .95rem; min-width: 0; }
+#s-start .go { background: linear-gradient(140deg, var(--ac), var(--ac2)); color: #fff; border-radius: 1.6rem; padding: 3rem 3.2rem; box-shadow: 0 1.6rem 4rem rgba(79, 107, 237, .3); }
+#s-start .go h2 { color: #fff; }
+#s-start .go p { color: rgba(255, 255, 255, .92); font-size: 1.5rem; }
+#s-start .go .back { margin-top: 2rem; padding-top: 1.6rem; border-top: 1px solid rgba(255, 255, 255, .3); font-size: 1.3rem; }
+#s-start .go b { color: #fff; }
+</style>
+<div class="wrap">
+  <div>
+    <span class="step"><span data-zh>备查</span><span data-en>Cheat sheet</span></span>
+    <h2><span data-zh>常用快捷键</span><span data-en>Shortcuts</span></h2>
+    <ul class="sc" data-sc-list></ul>
+  </div>
+  <div class="go">
+    <h2><span data-zh>好了，开始吧！</span><span data-en>You're ready!</span></h2>
+    <p><span data-zh>点左上角的「<b>打开</b>」，或者把你的 HTML 幻灯片拖进窗口。</span><span data-en>Click "<b>Open</b>" at the top left, or drag your HTML slides into the window.</span></p>
+    <p><span data-zh>记住三件事就够了：<b>点一下选中、双击改字、<kbd data-sc="save"></kbd> 保存</b>。</span><span data-en>Three things are enough: <b>click to select, double-click to edit, <kbd data-sc="save"></kbd> to save</b>.</span></p>
+    <div class="back"><span data-zh>以后想再看这份教程：点右上角 ⚙ 设置 →「打开使用教程」，或者点开始页右下角的「教程」。</span><span data-en>Want to see this again? ⚙ Settings → "Open tutorial", or click "Tutorial" at the bottom right of the start page.</span></div>
+  </div>
+</div>
+</section>
+
+<script>
+/* 在浏览器里单独打开时也能翻页（在 SlideEase 里编辑和放映时由软件负责翻页，这段不会重复处理） */
+(function () {
+  var s = document.querySelectorAll('.slide'), i = 0;
+  function go(n) { if (n < 0 || n >= s.length) return; s[i].classList.remove('active'); i = n; s[i].classList.add('active'); }
+  document.addEventListener('keydown', function (e) {
+    if (e.defaultPrevented) return;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ') go(i + 1);
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') go(i - 1);
+  });
+})();
+</script>
+</body>
+</html>
