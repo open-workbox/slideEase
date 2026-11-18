@@ -9,7 +9,8 @@
 
 **👉 How it works, FAQ and changelog are on the website: https://7na7.com/**
 
-![SlideEase start screen](screenShot/home-en.png)
+![SlideEase start screen](screenShot/home-en.png)  
+![SlideEase start screen](screenShot/editor.jpg)  
 
 - Download: [GitHub Releases](https://github.com/open-workbox/SlideEase/releases). Windows (installer / portable zip), macOS (Apple Silicon / Intel), Linux (AppImage / deb)
 
