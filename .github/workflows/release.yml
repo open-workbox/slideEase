@@ -1,6 +1,6 @@
 name: Release
 
-# 推送 v 开头的 tag（如 v0.1.0）时，在三大平台各自构建并发布到同一个 GitHub Release
+# 推送 v 开头的 tag（如 v0.6.0）时，在三大平台各自构建并发布到同一个 GitHub Release
 on:
   push:
     tags:

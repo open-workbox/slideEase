@@ -37,8 +37,8 @@ d = plistlib.load(open(p, 'rb'))
 d['CFBundleName'] = 'SlideEase'
 d['CFBundleDisplayName'] = 'SlideEase'
 d['CFBundleIdentifier'] = 'com.slideease.app'
-d['CFBundleShortVersionString'] = '0.1.0'
-d['CFBundleVersion'] = '0.1.0'
+d['CFBundleShortVersionString'] = '0.6.0'
+d['CFBundleVersion'] = '0.6.0'
 d['CFBundleDocumentTypes'] = [{
     'CFBundleTypeName': 'HTML Document',
     'CFBundleTypeRole': 'Editor',

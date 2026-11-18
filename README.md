@@ -9,8 +9,9 @@
 
 **👉 How it works, FAQ and changelog are on the website: https://7na7.com/**
 
+![SlideEase start screen](screenShot/home-en.png)
+
 - Download: [GitHub Releases](https://github.com/open-workbox/SlideEase/releases). Windows (installer / portable zip), macOS (Apple Silicon / Intel), Linux (AppImage / deb)
-- License: [Apache License 2.0](LICENSE)
 
 ### Install with AI / 交给 AI 安装
 
@@ -161,3 +162,7 @@ scripts/           Packaging scripts
 ## Privacy & anonymous analytics
 
 SlideEase sends a small amount of anonymous usage data (PostHog) so we can see which versions and operating systems are in use, how many people use it each day, and whether an update is available. It reports only the app version, a random device id, OS type, architecture, locale and a few feature event names. It never reports file names, paths, slide content or what you changed. If you build and distribute your own copy, replace the key and host in `analytics.js`.
+
+## License
+
+[Apache License 2.0](LICENSE)

@@ -1,7 +1,7 @@
 {
   "name": "slideease",
   "productName": "SlideEase",
-  "version": "0.1.0",
+  "version": "0.6.0",
   "description": "Mask first, then feed the AI: put the real data back into AI-made HTML slides on your own computer / 先脱敏，再喂 AI：在本机把真实数据填回 AI 做好的 HTML 幻灯片",
   "author": {
     "name": "open-workbox",
