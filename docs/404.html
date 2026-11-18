@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex" />
+<title>SlideEase</title>
+<link rel="icon" type="image/svg+xml" href="/icon.svg" />
+<script>
+  // GitHub Pages 找不到页面时会返回这个文件：直接跳回官网首页（保留 ?lang= 语言参数）
+  (function () {
+    var base = '/';
+    // 通过 open-workbox.github.io/<仓库名>/ 访问时，首页在仓库名这一级
+    if (/\.github\.io$/i.test(location.hostname)) {
+      var seg = location.pathname.split('/').filter(Boolean)[0];
+      if (seg) base = '/' + seg + '/';
+    }
+    var lang = new URLSearchParams(location.search).get('lang');
+    location.replace(base + (lang ? '?lang=' + encodeURIComponent(lang) : ''));
+  })();
+</script>
+<noscript><meta http-equiv="refresh" content="0; url=/" /></noscript>
+</head>
+<body style="font-family: system-ui, sans-serif; text-align: center; padding-top: 20vh; color: #646b7d;">
+  <p>Page not found. Taking you to the <a href="/">SlideEase home page</a>…</p>
+  <p>页面不存在，正在返回 <a href="/">SlideEase 首页</a>…</p>
+</body>
+</html>
