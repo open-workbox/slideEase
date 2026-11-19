@@ -57,17 +57,31 @@ jobs:
       - name: Build ${{ matrix.platform }}
         run: npx electron-builder --${{ matrix.platform }} --publish never
 
+      # 改成普通用户一看就懂的文件名，并且不带版本号：
+      # 这样 https://github.com/<仓库>/releases/latest/download/<文件名> 永远指向最新版，官网可以直接放下载链接
+      - name: Rename for users
+        shell: bash
+        run: |
+          mkdir -p out
+          for f in dist/*; do
+            case "$f" in
+              *__uninstaller*)    ;; # electron-builder 的中间文件，不发布
+              *-Setup-*.exe)      cp "$f" out/SlideEase-Windows-Installer.exe ;;
+              *-win-x64.zip)      cp "$f" out/SlideEase-Windows-Portable.zip ;;
+              *-mac-arm64.dmg)    cp "$f" out/SlideEase-macOS-Apple-Silicon.dmg ;;
+              *-mac-x64.dmg)      cp "$f" out/SlideEase-macOS-Intel.dmg ;;
+              *.AppImage)         cp "$f" out/SlideEase-Linux.AppImage ;;
+              *.deb)              cp "$f" out/SlideEase-Linux.deb ;;
+            esac
+          done
+          ls -l out
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.platform }}
           # 只收集给用户下载的安装包；软件自己的更新提示不依赖 latest.yml / blockmap，不需要上传
-          path: |
-            dist/*.exe
-            dist/*.zip
-            dist/*.dmg
-            dist/*.AppImage
-            dist/*.deb
+          path: out/*
           if-no-files-found: error
 
   release:
@@ -88,3 +102,22 @@ jobs:
           files: artifacts/**/*
           generate_release_notes: true
           fail_on_unmatched_files: true
+          # 放在自动生成的更新说明前面：告诉普通用户该下载哪个文件
+          body: |
+            ## 下载哪个？ / Which file should I download?
+
+            | 你的电脑 / Your computer | 下载这个 / Download |
+            |---|---|
+            | Windows（推荐） | **SlideEase-Windows-Installer.exe** 双击安装 / installer |
+            | Windows 免安装 / portable | SlideEase-Windows-Portable.zip 解压即用 / unzip and run |
+            | Mac：Apple 芯片（M1 / M2 / M3 / M4…） | **SlideEase-macOS-Apple-Silicon.dmg** |
+            | Mac：Intel 芯片 | SlideEase-macOS-Intel.dmg |
+            | Linux | SlideEase-Linux.AppImage，或 Debian / Ubuntu 用 SlideEase-Linux.deb |
+
+            不确定 Mac 是哪种芯片：点左上角的苹果菜单 → 关于本机，“芯片”一栏写着 Apple M 开头就是 Apple 芯片。
+            Not sure which Mac you have? Apple menu → About This Mac. "Chip: Apple M…" means Apple Silicon.
+
+            安装时被系统拦截？看 [安装说明](https://7na7.com/install.html)。 / Blocked by a warning? See the [install guide](https://7na7.com/install.html).
+
+            ---
+

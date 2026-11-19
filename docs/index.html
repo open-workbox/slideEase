@@ -222,6 +222,8 @@
   .dl .os { font-size: 26px; font-weight: 800; color: var(--ink); }
   .dl .note { color: var(--muted); font-size: 15px; margin: 8px 0 26px; }
   .dl .btn { width: 100%; }
+  .dl .btn.second { margin-top: 10px; background: #fff; color: var(--text); border: 1px solid var(--line); height: 46px; }
+  .dl .alt { margin-top: 14px; font-size: 14px; color: var(--muted); }
   .dl-sub { text-align: center; color: var(--muted); font-size: 15px; margin-top: 30px; }
 
   /* 更新日志 */
@@ -467,9 +469,9 @@
     <h2><span data-zh>免费下载，装好就能用</span><span data-en>Free. Install and go.</span></h2>
     <p class="lead"></p>
     <div class="dl-grid">
-      <div class="dl"><div class="os">Windows</div><div class="note"><span data-zh>安装版，或免安装的 zip</span><span data-en>Installer, or portable zip</span></div><a class="btn primary" href="https://github.com/open-workbox/SlideEase/releases/latest" target="_blank" rel="noopener"><span data-zh>下载 Windows 版</span><span data-en>Download for Windows</span></a></div>
-      <div class="dl"><div class="os">macOS</div><div class="note"><span data-zh>Apple 芯片 / Intel</span><span data-en>Apple Silicon / Intel</span></div><a class="btn primary" href="https://github.com/open-workbox/SlideEase/releases/latest" target="_blank" rel="noopener"><span data-zh>下载 macOS 版</span><span data-en>Download for macOS</span></a></div>
-      <div class="dl"><div class="os">Linux</div><div class="note">AppImage / deb</div><a class="btn primary" href="https://github.com/open-workbox/SlideEase/releases/latest" target="_blank" rel="noopener"><span data-zh>下载 Linux 版</span><span data-en>Download for Linux</span></a></div>
+      <div class="dl"><div class="os">Windows</div><div class="note"><span data-zh>Windows 10 / 11，双击安装</span><span data-en>Windows 10 / 11, double-click to install</span></div><a class="btn primary" href="https://github.com/open-workbox/slideEase/releases/latest/download/SlideEase-Windows-Installer.exe"><span data-zh>下载 Windows 版</span><span data-en>Download for Windows</span></a><div class="alt"><a href="https://github.com/open-workbox/slideEase/releases/latest/download/SlideEase-Windows-Portable.zip"><span data-zh>免安装版（zip，解压即用）</span><span data-en>Portable (zip, no install)</span></a></div></div>
+      <div class="dl"><div class="os">macOS</div><div class="note"><span data-zh>按你的 Mac 芯片选择</span><span data-en>Pick the one for your Mac's chip</span></div><a class="btn primary" href="https://github.com/open-workbox/slideEase/releases/latest/download/SlideEase-macOS-Apple-Silicon.dmg"><span data-zh>Apple 芯片（M1 / M2 / M3…）</span><span data-en>Apple Silicon (M1 / M2 / M3…)</span></a><a class="btn second" href="https://github.com/open-workbox/slideEase/releases/latest/download/SlideEase-macOS-Intel.dmg"><span data-zh>Intel 芯片</span><span data-en>Intel</span></a><div class="alt"><span data-zh>不确定？苹果菜单 → 关于本机，“芯片”写着 Apple M 开头就选第一个</span><span data-en>Not sure? Apple menu → About This Mac. "Chip: Apple M…" means the first one</span></div></div>
+      <div class="dl"><div class="os">Linux</div><div class="note"><span data-zh>大多数发行版都能直接运行</span><span data-en>Runs on most distributions</span></div><a class="btn primary" href="https://github.com/open-workbox/slideEase/releases/latest/download/SlideEase-Linux.AppImage"><span data-zh>下载 AppImage</span><span data-en>Download AppImage</span></a><div class="alt"><a href="https://github.com/open-workbox/slideEase/releases/latest/download/SlideEase-Linux.deb"><span data-zh>Debian / Ubuntu 用 deb 包</span><span data-en>deb package for Debian / Ubuntu</span></a></div></div>
     </div>
     <p class="dl-sub">
       <span data-zh>系统提示“未知来源”被拦住了？</span><span data-en>Blocked by an "unknown developer" warning? </span>
