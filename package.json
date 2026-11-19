@@ -16,7 +16,8 @@
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder",
-    "dist:dir": "electron-builder --dir"
+    "dist:dir": "electron-builder --dir",
+    "dist:store": "electron-builder --win appx --publish never"
   },
   "build": {
     "appId": "com.slideease.app",
@@ -56,6 +57,17 @@
         "nsis",
         "zip"
       ]
+    },
+    "appx": {
+      "artifactName": "SlideEase-Store-${version}.${ext}",
+      "applicationId": "SlideEase",
+      "displayName": "SlideEase",
+      "identityName": "open-workbox.SlideEase",
+      "publisher": "CN=30F5E497-1FAE-40D5-AF0B-68CE3099071E",
+      "publisherDisplayName": "open-workbox",
+      "languages": ["en-US", "zh-CN"],
+      "backgroundColor": "transparent",
+      "showNameOnTiles": false
     },
     "nsis": {
       "artifactName": "${productName}-Setup-${version}.${ext}",

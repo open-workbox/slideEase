@@ -27,6 +27,8 @@ function urlAllowed(u) {
 
 // 返回有新版时的信息；否则返回 null
 async function check() {
+  // 从 Microsoft Store 安装的版本由商店负责更新，不再提示去别处下载（商店政策也不允许）
+  if (process.windowsStore) return null;
   const p = await analytics.getFlagPayload(FLAG_KEY);
   if (!p || typeof p !== 'object') return null;
   const version = String(p.version || '');
